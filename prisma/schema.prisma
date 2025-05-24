@@ -1,0 +1,87 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  name            String?
+  password        String
+  image           String?
+  resetToken      String?   @unique
+  resetTokenExpiry DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  profile         Profile?
+  wardrobeItems   WardrobeItem[]
+  outfits         Outfit[]
+  ratings         OutfitRating[]
+}
+
+model Profile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id])
+  style       String?
+  bodyType    String?
+  preferences Json?    // Stores measurements, favorite colors, brands, etc.
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model WardrobeItem {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  name        String
+  type        String   // e.g., "top", "bottom", "shoes"
+  category    String   // e.g., "casual", "formal", "sports"
+  weather     String[] // e.g., ["summer", "winter"]
+  occasions   String[] // e.g., ["casual", "formal"]
+  imageUrl    String?
+  brand       String?
+  color       String?
+  size        String?
+  season      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  outfits     Outfit[]
+}
+
+model Outfit {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  name        String
+  occasion    String
+  weather     String
+  items       WardrobeItem[]
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  ratings     OutfitRating[]
+  isPublic    Boolean  @default(false)
+  shareUrl    String?  @unique
+}
+
+model OutfitRating {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  outfitId  String
+  outfit    Outfit   @relation(fields: [outfitId], references: [id])
+  rating    Int      @default(0)
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, outfitId])
+} 
