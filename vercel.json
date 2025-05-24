@@ -4,6 +4,8 @@
   "installCommand": "pnpm install",
   "framework": "nextjs",
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "RESEND_API_KEY": "@resend_api_key",
+    "NEXT_PUBLIC_APP_URL": "@next_public_app_url"
   }
 } 
