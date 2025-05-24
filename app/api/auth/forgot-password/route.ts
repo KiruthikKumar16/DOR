@@ -6,7 +6,8 @@ import { Resend } from "resend"
 // Log the API key status (without exposing the actual key)
 console.log("Resend API Key status:", process.env.RESEND_API_KEY ? "Present" : "Missing")
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Initialize Resend only if API key is available
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
 export async function POST(req: Request) {
   try {
@@ -57,6 +58,11 @@ export async function POST(req: Request) {
     console.log("Reset URL generated:", resetUrl)
     
     try {
+      if (!resend) {
+        console.log("Resend client not initialized - skipping email send")
+        return new NextResponse("If an account exists, you will receive a password reset email", { status: 200 })
+      }
+
       console.log("Attempting to send email...")
       const { data, error } = await resend.emails.send({
         from: "onboarding@resend.dev", // Using Resend's test domain for now
