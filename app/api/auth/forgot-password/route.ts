@@ -59,8 +59,8 @@ export async function POST(req: Request) {
     try {
       console.log("Attempting to send email...")
       const { data, error } = await resend.emails.send({
-        from: "onboarding@resend.dev", // Using Resend's test domain
-        to: "delivered@resend.dev", // Using Resend's test email
+        from: "onboarding@resend.dev", // Using Resend's test domain for now
+        to: email, // Send to the actual user's email
         subject: "Reset Your Password",
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
