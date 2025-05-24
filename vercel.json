@@ -1,17 +1,8 @@
 {
-  "buildCommand": "pnpm install && pnpm prisma generate && pnpm prisma db push && pnpm next build",
+  "version": 2,
+  "buildCommand": "pnpm install && pnpm prisma generate && pnpm next build",
   "installCommand": "pnpm install",
   "framework": "nextjs",
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/next",
-      "config": {
-        "buildCommand": "pnpm prisma generate && pnpm next build",
-        "installCommand": "pnpm install"
-      }
-    }
-  ],
   "env": {
     "NODE_ENV": "production"
   }

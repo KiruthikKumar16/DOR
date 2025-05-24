@@ -2,13 +2,15 @@
   "name": "my-v0-project",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "18.x"
+  },
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma db push && next build",
+    "build": "prisma generate && next build",
     "postinstall": "prisma generate",
     "start": "next start",
-    "lint": "next lint",
-    "vercel-build": "prisma generate && prisma db push && next build"
+    "lint": "next lint"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.9.1",
