@@ -52,31 +52,35 @@ export async function POST(req: Request) {
     // Get the model
     const model = genAI.getGenerativeModel({ model: MODEL });
 
-    const prompt = `You are a fashion expert specializing in global fashion and cultural dress codes, with deep knowledge of Indian traditional wear. Given the following information, recommend an outfit in JSON format:
+    const prompt = `You are a fashion expert specializing in global and regional fashion trends, cultural dressing norms, and traditional attire. Given the following information, recommend an outfit in JSON format:
 
-    Weather: Temperature ${weather.temperature}°C, ${weather.description}, Humidity ${weather.humidity}%, Wind Speed ${weather.windSpeed} m/s
+    Weather: ${weather}
     Occasion: ${occasion}
     Style/Vibe: ${outfitVibe}
     Body Type: ${bodyType}
     Gender: ${gender}
-    Destination: ${destination}
-    Random Seed: ${Math.random()} // Use this to generate different outfits
+    Location: ${destination}
+
+    CRITICAL RULES:
+    1. RESEARCH and consider the current fashion trends, common dressing styles, and cultural nuances of the specific LOCATION provided.
+    2. For formal occasions (weddings, religious ceremonies), recommend traditional or formal attire that is appropriate and common for the specific LOCATION's culture.
+    3. For casual occasions, suggest attire that is appropriate for the weather and common for casual wear in the specific LOCATION.
+    4. Ensure the outfit recommendations align with the requested Style/Vibe while respecting local norms.
+    5. ALWAYS include appropriate accessories and footwear that are suitable for the outfit, occasion, weather, and location.
 
     IMPORTANT: You must respond with ONLY a valid JSON object in this exact format:
     {
-      "outfit": {
-        "top": "3-4 word description of the top",
-        "topColor": "color of the top",
-        "bottom": "3-4 word description of the bottom",
-        "bottomColor": "color of the bottom",
-        "shoes": "3-4 word description of the shoes",
-        "shoesColor": "color of the shoes",
-        "accessories": ["3-4 word accessory 1", "3-4 word accessory 2"],
-        "accessoriesColor": "dominant color of accessories",
-        "outerwear": "3-4 word description of outerwear (if needed)",
-        "outerwearColor": "color of outerwear (if needed)"
-      },
-      "culturalNotes": "Brief cultural note about local dress customs and considerations for ${destination} (max 25 words)"
+      "top": "3-4 word description of the top",
+      "bottom": "3-4 word description of the bottom",
+      "shoes": "3-4 word description of the shoes",
+      "accessories": ["3-4 word accessory 1", "3-4 word accessory 2"],
+      "outerwear": "3-4 word description of outerwear (if needed)",
+      "topColor": "color of the top",
+      "bottomColor": "color of the bottom",
+      "shoesColor": "color of the shoes",
+      "accessoriesColor": "color of the accessories",
+      "outerwearColor": "color of the outerwear (if applicable)",
+      "culturalNotes": "Brief cultural note about local dress customs and considerations for the LOCATION (max 30 words)"
     }
 
     Rules:
@@ -86,36 +90,8 @@ export async function POST(req: Request) {
     4. Consider the weather conditions and occasion.
     5. Include at least 2 accessories.
     6. Include outerwear if the weather suggests it's needed.
-    7. Include specific cultural notes about dress customs for the destination.
-    8. Do not include any extra text or formatting outside the JSON object.
-    9. Ensure the outfit is appropriate for the specified gender and body type.
-    10. For Indian locations:
-        - Consider local cultural preferences and traditions
-        - Recommend appropriate traditional attire based on the occasion and location
-        - Include culturally appropriate accessories
-    11. For different vibes:
-        - Create unique outfits that match the requested vibe while respecting cultural norms
-        - Consider the occasion, weather, and location when interpreting the vibe
-        - Ensure each recommendation is distinct and appropriate for the context
-    12. For sarees and traditional wear:
-        - Specify complete outfits with all necessary components
-        - Consider the weather and occasion when choosing materials and styles
-        - Include appropriate accessories that complement the outfit
-    13. IMPORTANT: Each recommendation must be unique and different from previous ones. Use the random seed to generate variations in:
-        - Color combinations
-        - Fabric choices
-        - Accessory selections
-        - Style details
-        - Pattern choices
-    14. For each new recommendation:
-        - Try different color palettes
-        - Vary the fabric types
-        - Change the accessory combinations
-        - Modify the style details
-        - Use different patterns or textures
-    15. Include specific color suggestions for each clothing item and accessories.
-    16. Ensure color choices are appropriate for the occasion, weather, vibe, and destination.
-`;
+    7. Do not include any extra text or formatting outside the JSON object.
+    8. The recommended outfit MUST be appropriate for the specific LOCATION and its cultural context.`;
 
     console.log('Sending prompt to Gemini:', prompt);
 
@@ -133,20 +109,31 @@ export async function POST(req: Request) {
 
     const outfitRecommendation = JSON.parse(jsonMatch[0]);
 
-    // Validate the required fields
-    if (!outfitRecommendation.outfit?.top || !outfitRecommendation.outfit?.bottom || !outfitRecommendation.outfit?.shoes) {
+    // Validate the required fields directly from the parsed object
+    if (!outfitRecommendation.top || !outfitRecommendation.bottom || !outfitRecommendation.shoes) {
       console.error('Invalid outfit structure:', outfitRecommendation);
       throw new Error('Invalid outfit structure received from Gemini API');
     }
 
     // Ensure accessories is an array
-    if (!Array.isArray(outfitRecommendation.outfit.accessories)) {
-      outfitRecommendation.outfit.accessories = [];
+    if (!Array.isArray(outfitRecommendation.accessories)) {
+      outfitRecommendation.accessories = [];
     }
 
-    // Create the outfit data structure
+    // Create the outfit data structure using the flat object
     const outfitData = {
-      outfit: outfitRecommendation.outfit,
+      outfit: {
+        top: outfitRecommendation.top,
+        bottom: outfitRecommendation.bottom,
+        shoes: outfitRecommendation.shoes,
+        accessories: outfitRecommendation.accessories,
+        outerwear: outfitRecommendation.outerwear || '',
+        topColor: outfitRecommendation.topColor || '',
+        bottomColor: outfitRecommendation.bottomColor || '',
+        shoesColor: outfitRecommendation.shoesColor || '',
+        accessoriesColor: outfitRecommendation.accessoriesColor || '',
+        outerwearColor: outfitRecommendation.outerwearColor || ''
+      },
       weather: weather,
       culturalNotes: outfitRecommendation.culturalNotes || '',
       imageUrl: null

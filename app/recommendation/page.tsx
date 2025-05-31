@@ -238,14 +238,28 @@ export default function RecommendationPage() {
   };
 
   // Handle updating a specific outfit in the array after editing
-  const handleOutfitUpdate = (updatedOutfit: Outfit, index: number) => {
+  const handleOutfitUpdate = (updatedOutfit: Outfit, index: number, newImageUrl?: string, culturalNotes?: string) => {
     if (outfitResults) {
       const newOutfits = [...outfitResults.outfits];
       newOutfits[index] = updatedOutfit;
-      setOutfitResults({
+
+      // Create an updated result object
+      const updatedResult = {
         ...outfitResults,
-        outfits: newOutfits
-      });
+        outfits: newOutfits,
+      };
+
+      // Update imageUrl if a new one is provided
+      if (newImageUrl !== undefined) {
+        updatedResult.imageUrl = newImageUrl;
+      }
+
+      // Update culturalNotes if provided (only if not empty to avoid overwriting valid notes with empty ones)
+      if (culturalNotes !== undefined && culturalNotes !== null) {
+         updatedResult.culturalNotes = culturalNotes;
+      }
+
+      setOutfitResults(updatedResult);
     }
   };
 

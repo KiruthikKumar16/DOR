@@ -155,45 +155,41 @@ export async function generateOutfitImage(outfitRecommendation: any): Promise<st
         const promptForGemini = `Generate a realistic image of a person wearing the following outfit. Focus on the visual details of the clothing items and the overall style. Keep the background simple and neutral.
 
         Outfit Description:
-        Top: ${outfitRecommendation.outfit.top}
-        Bottom: ${outfitRecommendation.outfit.bottom}
-        Shoes: ${outfitRecommendation.outfit.shoes}
-        Accessories: ${outfitRecommendation.outfit.accessories.join(", ")}
-        ${outfitRecommendation.outfit.outerwear ? `Outerwear: ${outfitRecommendation.outfit.outerwear}` : ''}
+        Top: ${outfitRecommendation.outfit.top} (${outfitRecommendation.outfit.topColor})
+        Bottom: ${outfitRecommendation.outfit.bottom} (${outfitRecommendation.outfit.bottomColor})
+        Shoes: ${outfitRecommendation.outfit.shoes} (${outfitRecommendation.outfit.shoesColor})
+        Accessories: ${outfitRecommendation.outfit.accessories.join(", ")} (${outfitRecommendation.outfit.accessoriesColor})
+        ${outfitRecommendation.outfit.outerwear ? `Outerwear: ${outfitRecommendation.outfit.outerwear} (${outfitRecommendation.outfit.outerwearColor})` : ''}
 
         Style: ${outfitRecommendation.vibe}
         Occasion: ${outfitRecommendation.occasion}
-        Weather: ${outfitRecommendation.weather.condition} (${outfitRecommendation.weather.temperature}°C)
+        Weather: Temperature ${outfitRecommendation.weather.temperature}°C, ${outfitRecommendation.weather.condition}
 
         Please generate a high-quality, realistic image of this outfit. The image should be clear, well-lit, and show the outfit details accurately.`;
 
-        console.log('[DEBUG] Attempting image generation with Gemini');
+        console.log('[DEBUG] Attempting image generation with Gemini with prompt:', promptForGemini);
 
-        const result = await model.generateContent(promptForGemini);
-        const response = await result.response;
-        
-        // Get the image data from the response with proper type checking
-        const candidates = response.candidates;
-        if (!candidates || candidates.length === 0) {
-            console.warn('No candidates in Gemini response');
+        const result = await model.generateContent({
+            contents: [{ role: "user", parts: [{ text: promptForGemini }] }],
+            generationConfig: { // Use generationConfig for response modalities
+                responseModalities: ["TEXT", "IMAGE"], // Request both text and image output modalities
+            } as any, // Use any to bypass potential strict type checking if Modality is not easily accessible
+        });
+
+        const response = result.response;
+
+        // The response might contain both text and image parts
+        const imagePart = response.candidates?.[0]?.content?.parts?.find(part => part.inlineData?.mimeType?.startsWith('image/'));
+
+        if (imagePart?.inlineData?.data) {
+            const imageData = imagePart.inlineData.data;
+            const dataUrl = `data:${imagePart.inlineData.mimeType};base64,${imageData}`;
+            console.log('Successfully generated image using Gemini!');
+            return dataUrl;
+        } else {
+            console.warn('Gemini image generation did not return image data. Returning placeholder.', response);
             return "/placeholder.svg?height=400&width=300";
         }
-
-        const content = candidates[0]?.content;
-        if (!content || !content.parts || content.parts.length === 0) {
-            console.warn('No content parts in Gemini response');
-            return "/placeholder.svg?height=400&width=300";
-        }
-
-        const imageData = content.parts[0]?.inlineData?.data;
-        if (!imageData) {
-            console.warn('No image data in Gemini response');
-            return "/placeholder.svg?height=400&width=300";
-        }
-
-        const dataUrl = `data:image/jpeg;base64,${imageData}`;
-        console.log('Successfully generated image using Gemini!');
-        return dataUrl;
 
     } catch (error) {
         console.error('Error generating outfit image with Gemini:', error);

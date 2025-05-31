@@ -43,7 +43,7 @@ interface OutfitResultProps {
   };
   onReset: () => void;
   onRegenerateOutfit: (e: React.FormEvent) => Promise<void>;
-  onUpdateOutfit: (updatedOutfit: Outfit, index: number) => void;
+  onUpdateOutfit: (updatedOutfit: Outfit, index: number, newImageUrl?: string, culturalNotes?: string) => void;
 }
 
 export default function OutfitResult({ result, onReset, onRegenerateOutfit, onUpdateOutfit }: OutfitResultProps) {
@@ -52,6 +52,7 @@ export default function OutfitResult({ result, onReset, onRegenerateOutfit, onUp
   const [regenerating, setRegenerating] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [showSaveSuccessMessage, setShowSaveSuccessMessage] = useState(false);
+  const [isReimagining, setIsReimagining] = useState(false);
   
   const currentOutfit = result.outfits?.[result.currentOutfitIndex] || {
     top: "No outfit available",
@@ -152,14 +153,50 @@ export default function OutfitResult({ result, onReset, onRegenerateOutfit, onUp
     setIsEditing(true)
   }
 
-  const handleSaveEdit = (editedOutfit: Outfit) => {
-    onUpdateOutfit(editedOutfit, result.currentOutfitIndex)
-    setIsEditing(false)
-    toast({
-      title: "Outfit updated",
-      description: "Your outfit has been updated successfully",
-    })
-  }
+  const handleSaveEdit = async (editedOutfit: Outfit) => {
+    setIsEditing(false);
+    setIsReimagining(true);
+
+    try {
+      // Call the API to regenerate the image with the edited outfit
+      const response = await fetch('/api/reimage-outfit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          outfit: editedOutfit,
+          vibe: result.vibe, // Pass relevant context for image generation
+          occasion: result.occasion,
+          weather: result.weather,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to regenerate image after edit');
+      }
+
+      const data = await response.json();
+      const newImageUrl = data.imageUrl; // Assuming the API returns { imageUrl: string }
+
+      // Update the outfit data AND the image URL in the parent component's state
+      onUpdateOutfit(editedOutfit, result.currentOutfitIndex, newImageUrl, result.culturalNotes);
+
+      toast({
+        title: "Outfit updated and saved!",
+        description: newImageUrl && newImageUrl !== "/placeholder.svg?height=400&width=300" ? "Your outfit and image have been updated and saved successfully." : "Your outfit has been updated and saved. Image regeneration failed.",
+      });
+    } catch (error) {
+      console.error("Error regenerating image after edit:", error);
+      toast({
+        title: "Error",
+        description: "Outfit updated and saved to backend, but image regeneration failed. Cultural notes may not be saved correctly.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsReimagining(false);
+    }
+  };
 
   const handleCancelEdit = () => {
     setIsEditing(false)
@@ -215,17 +252,25 @@ export default function OutfitResult({ result, onReset, onRegenerateOutfit, onUp
             <TabsContent value="outfit" className="pt-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="flex justify-center">
-                  <div className="relative w-full max-w-[250px] md:max-w-[300px] h-[300px] md:h-[400px] bg-muted rounded-md overflow-hidden">
+                  <div className="relative w-full max-w-[250px] md:max-w-[300px] bg-muted rounded-md overflow-hidden">
+                    {isReimagining ? (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 z-10">
+                        <div className="flex flex-col items-center text-white">
+                          <Loader2 className="h-8 w-8 animate-spin mb-2" />
+                          <span className="text-sm">Generating image...</span>
+                        </div>
+                      </div>
+                    ) : null}
                     <img
-                      src="/placeholder.svg"
+                      src={result.imageUrl || "/placeholder.svg"}
                       alt="Outfit recommendation"
                       style={{
-                        position: 'absolute',
-                        height: '100%',
+                        position: 'relative',
                         width: '100%',
-                        inset: '0px',
+                        height: 'auto',
                         objectFit: 'cover',
-                        backgroundColor: 'hsl(var(--muted))'
+                        backgroundColor: 'hsl(var(--muted))',
+                        display: 'block'
                       }}
                     />
                   </div>
