@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { signIn } from "next-auth/react"
 
 export default function LoginPage() {
@@ -25,10 +24,6 @@ export default function LoginPage() {
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const [showForgotPassword, setShowForgotPassword] = useState(false)
-  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("")
-  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false)
-  const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -48,45 +43,6 @@ export default function LoginPage() {
       setError(error instanceof Error ? error.message : "Failed to login. Please try again.")
     } finally {
       setLoading(false)
-    }
-  }
-
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setForgotPasswordLoading(true)
-
-    try {
-      const response = await fetch("/api/auth/forgot-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: forgotPasswordEmail,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to send reset email")
-      }
-
-      toast({
-        title: "Success",
-        description: "If an account exists, you will receive a password reset email",
-      })
-
-      setForgotPasswordEmail("")
-      setShowForgotPassword(false)
-      setForgotPasswordSuccess(true)
-    } catch (error) {
-      console.error("Forgot password error:", error)
-      toast({
-        title: "Error",
-        description: "Failed to send reset email. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setForgotPasswordLoading(false)
     }
   }
 
@@ -120,14 +76,14 @@ export default function LoginPage() {
           <CardTitle className="text-2xl">Welcome</CardTitle>
           <CardDescription>Sign in to your account</CardDescription>
         </CardHeader>
-          <CardContent className="space-y-4">
-              <Button
+        <CardContent className="space-y-4">
+          <Button
             className="w-full"
             onClick={handleGoogleLogin}
             disabled={loading}
           >
-              {loading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            {loading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                 <path
@@ -149,60 +105,9 @@ export default function LoginPage() {
               </svg>
             )}
             Continue with Google
-            </Button>
+          </Button>
         </CardContent>
       </Card>
-
-      <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Reset Password</DialogTitle>
-            <DialogDescription>
-              Enter your email address and we'll send you a link to reset your password.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleForgotPassword}>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="forgot-password-email">Email</Label>
-                <Input
-                  id="forgot-password-email"
-                  type="email"
-                  value={forgotPasswordEmail}
-                  onChange={(e) => setForgotPasswordEmail(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="submit" disabled={forgotPasswordLoading}>
-                {forgotPasswordLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Sending...
-                  </>
-                ) : (
-                  "Send Reset Link"
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={forgotPasswordSuccess} onOpenChange={setForgotPasswordSuccess}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Reset Link Sent</DialogTitle>
-            <DialogDescription>
-              A password reset link has been sent to your email. Please check your inbox (and spam folder) to reset your password.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button onClick={() => setForgotPasswordSuccess(false)}>Close</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
