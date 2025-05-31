@@ -36,13 +36,18 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
   ],
   callbacks: {
     async redirect({ url, baseUrl }) {
-      // Handle relative URLs
-      if (url.startsWith("/")) {
-        return `${baseUrl}${url}`;
-      }
-      // Handle absolute URLs
-      else if (new URL(url).origin === baseUrl) {
-        return url;
+      try {
+        // If url is relative, combine with baseUrl
+        if (url.startsWith("/")) {
+          return `${baseUrl}${url}`;
+        }
+        // If url is absolute and matches baseUrl origin, allow it
+        const urlObj = new URL(url, baseUrl);
+        if (urlObj.origin === baseUrl) {
+          return url;
+        }
+      } catch (e) {
+        console.error(`Invalid intended URL in redirect callback: ${url}`, e);
       }
       return baseUrl;
     },
