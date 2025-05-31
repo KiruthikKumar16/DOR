@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/auth-context"
 import { Button } from "@/components/ui/button"
@@ -64,6 +64,21 @@ export default function RecommendationPage() {
   const [showProfileIncompleteMessage, setShowProfileIncompleteMessage] = useState(false); // New state for incomplete profile message
   const [error, setError] = useState<string | null>(null)
 
+  // Effect to load saved form data from localStorage on mount
+  useEffect(() => {
+    const savedFormData = localStorage.getItem('recommendationFormData');
+    if (savedFormData) {
+      try {
+        const parsedData = JSON.parse(savedFormData);
+        setFormData(parsedData);
+        localStorage.removeItem('recommendationFormData'); // Clear saved data after loading
+      } catch (e) {
+        console.error('Failed to parse saved form data:', e);
+        localStorage.removeItem('recommendationFormData'); // Clear invalid data
+      }
+    }
+  }, []); // Empty dependency array means this effect runs only once on mount
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
@@ -78,6 +93,8 @@ export default function RecommendationPage() {
 
     if (!user) {
       setShowLoginDialog(true)
+      // Save current form data to localStorage before redirecting for login
+      localStorage.setItem('recommendationFormData', JSON.stringify(formData));
       return
     }
 
@@ -110,24 +127,15 @@ export default function RecommendationPage() {
       console.log('Missing fields:', missingFields);
 
       if (missingFields.length > 0) {
-        console.log('Profile incomplete, attempting to show toast.');
-        setShowProfileIncompleteMessage(true); // Show temporary message
-        const messageTimer = setTimeout(() => {
-          setShowProfileIncompleteMessage(false);
-        }, 5000); // Show message for 5 seconds
-
-        // Redirect to profile page after the message disappears
-        const redirectTimer = setTimeout(() => {
-          router.push("/profile");
-        }, 5000); // Redirect after 5 seconds
-        
-        setLoading(false);
-        
-        // Clean up both timers on component unmount or re-run
-        return () => {
-          clearTimeout(messageTimer);
-          clearTimeout(redirectTimer);
-        };
+        // Display error message using toast and redirect to profile
+        toast({
+          title: "Profile Incomplete",
+          description: "Please complete your profile (Gender, Body Type) before generating recommendations.",
+          variant: "destructive",
+        });
+        setLoading(false); // Stop loading
+        router.push("/profile"); // Redirect to profile page
+        return; // Stop execution here
       }
 
       console.log('Profile complete, proceeding with recommendation generation.');

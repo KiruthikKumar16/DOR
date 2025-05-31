@@ -1,8 +1,16 @@
+"use client"
+
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { MapPin, Calendar, Sparkles, Shirt, User } from "lucide-react"
+import { useTheme } from "next-themes"
+import Image from 'next/image'
 
 export default function HomePage() {
+  const { theme } = useTheme()
+  const isDarkMode = theme === 'dark'
+  const heroImageSrc = isDarkMode ? '/img.png' : '/image.png'
+
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
@@ -29,11 +37,16 @@ export default function HomePage() {
               </div>
             </div>
             <div className="flex items-center justify-center">
-              <div className="relative h-[250px] md:h-[350px] w-full overflow-hidden rounded-xl bg-background">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-blue-500 opacity-20"></div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Shirt className="h-20 w-20 md:h-32 md:w-32 text-primary" />
-                </div>
+              <div className="relative h-[350px] md:h-[500px] w-full overflow-hidden rounded-xl">
+                <Image
+                  src={heroImageSrc}
+                  alt="Outfit recommendation hero image"
+                  fill
+                  style={{
+                    objectFit: 'contain',
+                  }}
+                  priority
+                />
               </div>
             </div>
           </div>
