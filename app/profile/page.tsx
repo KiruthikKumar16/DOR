@@ -36,6 +36,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(true)
   const [changingPassword, setChangingPassword] = useState(false)
+  const [showSaveSuccess, setShowSaveSuccess] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -116,10 +117,11 @@ export default function ProfilePage() {
         throw new Error("Failed to update profile")
       }
 
-      toast({
-        title: "Success",
-        description: "Profile updated successfully",
-      })
+      setShowSaveSuccess(true)
+      const timer = setTimeout(() => {
+        setShowSaveSuccess(false)
+      }, 3000)
+      return () => clearTimeout(timer)
     } catch (error) {
       console.error("Error updating profile:", error)
       toast({
@@ -196,6 +198,44 @@ export default function ProfilePage() {
     }
   }
 
+  const handleDeleteAccount = async () => {
+    // Add confirmation dialog
+    const confirmed = window.confirm('Are you sure you want to delete your account? This action cannot be undone.');
+    
+    if (!confirmed) {
+      return; // Stop if the user cancels
+    }
+
+    try {
+      // Call the backend API to delete the user and their data
+      const response = await fetch("/api/user/delete", {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete account");
+      }
+
+      // Show a success message
+      toast({
+        title: "Success",
+        description: "Account deleted successfully",
+      });
+
+      // Log the user out after successful deletion
+      logout();
+      router.push("/login");
+
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete account. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (fetching) {
     return (
       <div className="container py-6 md:py-12">
@@ -212,19 +252,9 @@ export default function ProfilePage() {
         <h1 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8">Your Profile</h1>
 
         <Tabs defaultValue="profile">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="profile" className="text-xs md:text-sm">
-              Profile Information
-            </TabsTrigger>
-            <TabsTrigger value="account" className="text-xs md:text-sm">
-              Account Settings
-            </TabsTrigger>
-          </TabsList>
-
           <TabsContent value="profile" className="pt-4 md:pt-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg md:text-xl">Profile Information</CardTitle>
                 <CardDescription className="text-sm">
                   Update your personal information to get better outfit recommendations
                 </CardDescription>
@@ -329,75 +359,26 @@ export default function ProfilePage() {
                   </Button>
                 </CardFooter>
               </form>
-            </Card>
-          </TabsContent>
 
-          <TabsContent value="account" className="pt-4 md:pt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg md:text-xl">Account Settings</CardTitle>
-                <CardDescription className="text-sm">Manage your account settings and preferences</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="current-password" className="text-sm">
-                      Current Password
-                    </Label>
-                    <Input
-                      id="current-password"
-                      name="currentPassword"
-                      type="password"
-                      value={passwordData.currentPassword}
-                      onChange={handlePasswordChange}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="new-password" className="text-sm">
-                      New Password
-                    </Label>
-                    <Input
-                      id="new-password"
-                      name="newPassword"
-                      type="password"
-                      value={passwordData.newPassword}
-                      onChange={handlePasswordChange}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirm-password" className="text-sm">
-                      Confirm New Password
-                    </Label>
-                    <Input
-                      id="confirm-password"
-                      name="confirmPassword"
-                      type="password"
-                      value={passwordData.confirmPassword}
-                      onChange={handlePasswordChange}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" disabled={changingPassword} className="w-full sm:w-auto">
-                    {changingPassword ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Changing Password...
-                      </>
-                    ) : (
-                      "Change Password"
-                    )}
-                  </Button>
-                </form>
-
-                <div className="pt-4 border-t">
-                  <Button variant="destructive" onClick={logout} className="w-full sm:w-auto">
-                    Sign Out
-                  </Button>
+              {showSaveSuccess && (
+                <div className="mt-4 text-center text-green-600 text-sm">
+                  Profile saved successfully!
                 </div>
+              )}
+            </Card>
+
+            {/* Delete Account Button */}
+            <Card className="mt-6 border-red-300 dark:border-red-700">
+              <CardContent className="flex justify-between items-center py-4">
+                 <div className="text-sm font-semibold text-red-600 dark:text-red-400">
+                   Danger Zone: Delete your account
+                  </div>
+                 <Button variant="destructive" onClick={handleDeleteAccount}>
+                   Delete Account
+                  </Button>
               </CardContent>
             </Card>
+
           </TabsContent>
         </Tabs>
       </div>

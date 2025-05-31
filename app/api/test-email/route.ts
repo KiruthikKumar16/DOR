@@ -1,18 +1,11 @@
 import { NextResponse } from "next/server"
 import { Resend } from "resend"
 
-// Initialize Resend only if API key is available
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function GET() {
   try {
     console.log("Testing email sending...")
-    
-    if (!resend) {
-      console.log("Resend client not initialized - skipping test email")
-      return new NextResponse("Email service not configured", { status: 503 })
-    }
-
     const { data, error } = await resend.emails.send({
       from: "onboarding@resend.dev",
       to: "delivered@resend.dev", // Resend's test email address

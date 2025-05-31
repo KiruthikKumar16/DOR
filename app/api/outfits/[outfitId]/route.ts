@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../../auth/[...nextauth]/route';
+import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { nanoid } from 'nanoid';
 
@@ -17,14 +16,14 @@ export async function GET(
   { params }: { params: { outfitId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     const user = session?.user as SessionUser | null;
     
     if (!user?.id) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    const outfit = await prisma.outfit.findUnique({
+    const outfit = await prisma.outfit.findFirst({
       where: {
         id: params.outfitId,
         OR: [
@@ -54,7 +53,7 @@ export async function GET(
     return NextResponse.json(outfit);
   } catch (error) {
     console.error('Error fetching outfit:', error);
-    return new NextResponse('Internal Error', { status: 500 });
+    return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
 
@@ -64,7 +63,7 @@ export async function POST(
   { params }: { params: { outfitId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     const user = session?.user as SessionUser | null;
     
     if (!user?.id) {
@@ -100,7 +99,7 @@ export async function POST(
     return NextResponse.json(outfitRating);
   } catch (error) {
     console.error('Error rating outfit:', error);
-    return new NextResponse('Internal Error', { status: 500 });
+    return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
 
@@ -110,7 +109,7 @@ export async function PATCH(
   { params }: { params: { outfitId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     const user = session?.user as SessionUser | null;
     
     if (!user?.id) {
@@ -118,7 +117,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { isPublic } = body;
+    const { name, isPublic } = body;
 
     const outfit = await prisma.outfit.update({
       where: {
@@ -126,6 +125,7 @@ export async function PATCH(
         userId: user.id
       },
       data: {
+        name,
         isPublic,
         shareUrl: isPublic ? nanoid(10) : null
       }
@@ -134,7 +134,7 @@ export async function PATCH(
     return NextResponse.json(outfit);
   } catch (error) {
     console.error('Error updating outfit:', error);
-    return new NextResponse('Internal Error', { status: 500 });
+    return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
 
@@ -144,7 +144,7 @@ export async function DELETE(
   { params }: { params: { outfitId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     const user = session?.user as SessionUser | null;
     
     if (!user?.id) {
@@ -161,6 +161,6 @@ export async function DELETE(
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     console.error('Error deleting outfit:', error);
-    return new NextResponse('Internal Error', { status: 500 });
+    return new NextResponse('Internal Server Error', { status: 500 });
   }
 } 

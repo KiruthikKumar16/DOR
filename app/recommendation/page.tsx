@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/auth-context"
@@ -21,6 +20,31 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { getOutfitRecommendation } from '@/lib/api'
+
+interface Outfit {
+  top: string;
+  bottom: string;
+  shoes: string;
+  accessories: string[];
+  outerwear?: string;
+}
+
+interface TransformedResult {
+  destination: string;
+  date: string;
+  occasion: string;
+  vibe: string;
+  weather: {
+    temperature: number;
+    condition: string;
+    precipitation: string;
+  };
+  outfits: Outfit[]; // Now an array of outfits
+  currentOutfitIndex: number; // Keep track of the currently displayed outfit
+  imageUrl: string;
+  culturalNotes: string;
+}
 
 export default function RecommendationPage() {
   const { user, loading: authLoading } = useAuth()
@@ -35,9 +59,10 @@ export default function RecommendationPage() {
   })
 
   const [loading, setLoading] = useState(false)
-  const [outfitResult, setOutfitResult] = useState<any>(null)
-  const [usedOutfitIndices, setUsedOutfitIndices] = useState<number[]>([])
+  const [outfitResults, setOutfitResults] = useState<TransformedResult | null>(null) // Store the whole result
   const [showLoginDialog, setShowLoginDialog] = useState(false)
+  const [showProfileIncompleteMessage, setShowProfileIncompleteMessage] = useState(false); // New state for incomplete profile message
+  const [error, setError] = useState<string | null>(null)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -46,114 +71,6 @@ export default function RecommendationPage() {
 
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }))
-  }
-
-  // Define a set of outfits to choose from
-  const outfitOptions = [
-    {
-      top: "Light cotton shirt",
-      bottom: "Chino pants",
-      shoes: "Casual loafers",
-      accessories: ["Sunglasses", "Watch"],
-      outerwear: "Light jacket",
-    },
-    {
-      top: "Linen button-up shirt",
-      bottom: "Slim fit jeans",
-      shoes: "White sneakers",
-      accessories: ["Sunglasses", "Leather bracelet"],
-      outerwear: "Lightweight cardigan",
-    },
-    {
-      top: "Polo shirt",
-      bottom: "Khaki shorts",
-      shoes: "Boat shoes",
-      accessories: ["Panama hat", "Leather belt"],
-      outerwear: undefined,
-    },
-    {
-      top: "Henley shirt",
-      bottom: "Dark jeans",
-      shoes: "Chelsea boots",
-      accessories: ["Minimalist watch", "Leather wallet"],
-      outerwear: "Denim jacket",
-    },
-    {
-      top: "V-neck t-shirt",
-      bottom: "Linen trousers",
-      shoes: "Espadrilles",
-      accessories: ["Woven bracelet", "Aviator sunglasses"],
-      outerwear: undefined,
-    },
-    {
-      top: "Chambray shirt",
-      bottom: "Chino shorts",
-      shoes: "Canvas sneakers",
-      accessories: ["Woven belt", "Straw hat"],
-      outerwear: undefined,
-    },
-    {
-      top: "Graphic tee",
-      bottom: "Cargo shorts",
-      shoes: "Hiking sandals",
-      accessories: ["Bandana", "Sports watch"],
-      outerwear: "Lightweight windbreaker",
-    },
-    {
-      top: "Oxford button-down",
-      bottom: "Tailored trousers",
-      shoes: "Penny loafers",
-      accessories: ["Leather belt", "Dress watch"],
-      outerwear: "Blazer",
-    },
-  ]
-
-  const generateOutfitRecommendation = async (formValues = formData) => {
-    // In a real app, you would make an API call to your backend
-    // Mock API response
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-
-    // Get available outfit indices (ones we haven't used yet)
-    let availableIndices = Array.from({ length: outfitOptions.length }, (_, i) => i).filter(
-      (i) => !usedOutfitIndices.includes(i),
-    )
-
-    // If we've used all outfits, reset
-    if (availableIndices.length === 0) {
-      availableIndices = Array.from({ length: outfitOptions.length }, (_, i) => i)
-      setUsedOutfitIndices([])
-    }
-
-    // Pick a random outfit from the available options
-    const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)]
-
-    // Add this index to used indices
-    setUsedOutfitIndices((prev) => [...prev, randomIndex])
-
-    // Get the outfit
-    const randomOutfit = outfitOptions[randomIndex]
-
-    // Generate weather data
-    const weatherOptions = [
-      { temperature: 22, condition: "Sunny", precipitation: "0%" },
-      { temperature: 24, condition: "Partly cloudy", precipitation: "10%" },
-      { temperature: 20, condition: "Clear skies", precipitation: "5%" },
-      { temperature: 26, condition: "Light breeze", precipitation: "0%" },
-      { temperature: 18, condition: "Overcast", precipitation: "20%" },
-    ]
-
-    const randomWeather = weatherOptions[Math.floor(Math.random() * weatherOptions.length)]
-
-    return {
-      destination: formValues.destination,
-      date: formValues.travelDate,
-      occasion: formValues.occasion,
-      vibe: formValues.vibe,
-      weather: randomWeather,
-      outfit: randomOutfit,
-      imageUrl: "/placeholder.svg?height=400&width=300",
-      culturalNotes: "Casual attire is acceptable for most venues in this destination.",
-    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -165,42 +82,172 @@ export default function RecommendationPage() {
     }
 
     setLoading(true)
+    setOutfitResults(null); // Clear previous results
+    setError(null);
 
     try {
-      const result = await generateOutfitRecommendation()
-      setOutfitResult(result)
+      // Fetch profile data to check if required fields are filled
+      console.log('Fetching profile data...');
+      const profileResponse = await fetch("/api/user/profile");
+      
+      if (!profileResponse.ok) {
+        console.error('Failed to fetch profile data with status:', profileResponse.status);
+        throw new Error("Failed to fetch profile data");
+      }
+
+      const profileData = await profileResponse.json();
+      console.log('Profile data fetched:', profileData);
+
+      // Check for required profile fields
+      const requiredFields = ['gender', 'height', 'weight', 'bodyType'];
+      const missingFields = requiredFields.filter(field => {
+        // Check both top-level fields and fields within the preferences object
+        const fieldValue = profileData[field] !== undefined && profileData[field] !== null && profileData[field] !== '';
+        const preferencesFieldValue = profileData.preferences?.[field] !== undefined && profileData.preferences?.[field] !== null && profileData.preferences?.[field] !== '';
+        return !fieldValue && !preferencesFieldValue;
+      });
+
+      console.log('Missing fields:', missingFields);
+
+      if (missingFields.length > 0) {
+        console.log('Profile incomplete, attempting to show toast.');
+        setShowProfileIncompleteMessage(true); // Show temporary message
+        const messageTimer = setTimeout(() => {
+          setShowProfileIncompleteMessage(false);
+        }, 5000); // Show message for 5 seconds
+
+        // Redirect to profile page after the message disappears
+        const redirectTimer = setTimeout(() => {
+          router.push("/profile");
+        }, 5000); // Redirect after 5 seconds
+        
+        setLoading(false);
+        
+        // Clean up both timers on component unmount or re-run
+        return () => {
+          clearTimeout(messageTimer);
+          clearTimeout(redirectTimer);
+        };
+      }
+
+      console.log('Profile complete, proceeding with recommendation generation.');
+
+      // Format date to DD/MM/YY
+      const date = new Date(formData.travelDate)
+      const formattedDate = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear().toString().slice(-2)}`
+
+      // Get weather data for the destination
+      const weatherResponse = await fetch(`/api/weather?destination=${encodeURIComponent(formData.destination)}`);
+      if (!weatherResponse.ok) {
+        throw new Error('Failed to fetch weather data');
+      }
+      const weatherData = await weatherResponse.json();
+
+      const data = {
+        destination: formData.destination,
+        date: formattedDate,
+        occasion: formData.occasion,
+        vibe: formData.vibe
+      }
+
+      console.log('Sending recommendation request with data:', data);
+
+      // Use the updated API function and interface
+      const result = await getOutfitRecommendation(data)
+      
+      // Check if there's a weather error
+      if (result.weather?.error) {
+        setError(result.weather.error);
+        setLoading(false);
+        return;
+      }
+
+      // Transform the API response to match the expected frontend format
+      const transformedResult: TransformedResult = {
+        destination: formData.destination,
+        date: formData.travelDate,
+        occasion: formData.occasion,
+        vibe: formData.vibe,
+        weather: {
+          temperature: result.weather.temperature,
+          condition: result.weather.description, // Use the description as the climate condition
+          precipitation: `${result.weather.precipitation}%`
+        },
+        outfits: result.outfits || [],
+        currentOutfitIndex: 0,
+        imageUrl: result.imageUrl || "/placeholder.svg",
+        culturalNotes: result.culturalNotes || ""
+      }
+
+      // Log the transformed result for debugging
+      console.log('Transformed result:', transformedResult);
+
+      // Validate that we have at least one outfit and the first outfit has required fields
+      if (!transformedResult.outfits || transformedResult.outfits.length === 0 || !transformedResult.outfits[0]?.top || !transformedResult.outfits[0]?.bottom || !transformedResult.outfits[0]?.shoes) {
+        console.error('Invalid outfit data:', transformedResult.outfits);
+        throw new Error("Invalid outfit recommendation received - missing required fields");
+      }
+
+      setOutfitResults(transformedResult)
 
       toast({
         title: "Recommendation generated",
         description: "Your outfit recommendation is ready!",
       })
     } catch (error) {
+      console.error("Recommendation error:", error);
+      setError(error instanceof Error ? error.message : "Failed to generate recommendation. Please try again.");
       toast({
         title: "Error",
-        description: "Failed to generate recommendation. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to generate recommendation. Please try again.",
         variant: "destructive",
       })
-      console.error("Recommendation error:", error)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleRegenerateOutfit = async () => {
-    if (!user) {
-      setShowLoginDialog(true)
-      return
+  // Handle cycling through outfits or regenerating
+  const handleNextOutfit = async (e: React.FormEvent) => {
+     // Prevent default behavior if event exists, though not strictly necessary for a synthetic event
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
     }
 
-    try {
-      const newResult = await generateOutfitRecommendation()
-      setOutfitResult(newResult)
-      return Promise.resolve()
-    } catch (error) {
-      console.error("Regeneration error:", error)
-      return Promise.reject(error)
+    if (outfitResults) {
+      const nextIndex = outfitResults.currentOutfitIndex + 1;
+      if (nextIndex < outfitResults.outfits.length) {
+        // Move to the next outfit in the array
+        setOutfitResults({
+          ...outfitResults,
+          currentOutfitIndex: nextIndex
+        });
+         toast({
+          title: "Showing next outfit",
+          description: `Displaying outfit ${nextIndex + 1} of ${outfitResults.outfits.length}`,
+        });
+      } else {
+        // If we've shown all outfits, regenerate by submitting the form
+        toast({
+          title: "Generating more recommendations",
+          description: "Fetching a new batch of outfit ideas.",
+        });
+        await handleSubmit(new Event('submit') as unknown as React.FormEvent);
+      }
     }
-  }
+  };
+
+  // Handle updating a specific outfit in the array after editing
+  const handleOutfitUpdate = (updatedOutfit: Outfit, index: number) => {
+    if (outfitResults) {
+      const newOutfits = [...outfitResults.outfits];
+      newOutfits[index] = updatedOutfit;
+      setOutfitResults({
+        ...outfitResults,
+        outfits: newOutfits
+      });
+    }
+  };
 
   const handleLoginDialogClose = () => {
     setShowLoginDialog(false)
@@ -211,7 +258,7 @@ export default function RecommendationPage() {
     <div className="container py-12">
       <h1 className="text-3xl font-bold mb-8 text-center">Get Outfit Recommendation</h1>
 
-      {!outfitResult ? (
+      {!outfitResults ? (
         <Card className="mx-auto max-w-2xl">
           <CardHeader>
             <CardTitle>Enter Trip Details</CardTitle>
@@ -315,10 +362,25 @@ export default function RecommendationPage() {
         </Card>
       ) : (
         <OutfitResult
-          result={outfitResult}
-          onReset={() => setOutfitResult(null)}
-          onRegenerateOutfit={handleRegenerateOutfit}
+          result={outfitResults} // Pass the whole results object
+          // currentOutfit={outfitResults.outfits[outfitResults.currentOutfitIndex]} // Pass the currently selected outfit - OutfitResult now accesses this internally
+          onReset={() => setOutfitResults(null)}
+          onRegenerateOutfit={handleNextOutfit} // Call handleNextOutfit to cycle or regenerate
+          onUpdateOutfit={handleOutfitUpdate} // Pass the update handler
         />
+      )}
+
+      {/* Temporary Profile Incomplete Message */}
+      {showProfileIncompleteMessage && (
+        <div className="mt-4 text-center text-red-600 text-sm">
+          Please complete your profile (Gender, Height, Weight, Body Type) before generating recommendations.
+        </div>
+      )}
+
+      {error && (
+        <div className="mt-4 text-center text-red-600 text-sm">
+          {error}
+        </div>
       )}
 
       <Dialog open={showLoginDialog} onOpenChange={handleLoginDialogClose}>

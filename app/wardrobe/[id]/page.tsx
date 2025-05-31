@@ -12,6 +12,42 @@ import { Loader2, ArrowLeft, ThermometerSun, MapPin, Calendar, Tag, Sparkles, Tr
 import Image from "next/image"
 import Link from "next/link"
 
+interface Outfit {
+  id: string;
+  name: string;
+  destination?: string | null;
+  date?: string | null; // Stored as DateTime in Prisma, but might come as ISO string
+  occasion?: string | null;
+  vibe?: string | null;
+  weather?: any; // Can be object or string
+  outfit?: any; // Can be object or string
+  imageUrl?: string | null;
+  culturalNotes?: string | null;
+  isPublic: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Interfaces for parsed JSON data (matching what the GET /api/outfits/[outfitId] should return)
+interface ParsedWeatherData {
+    temperature?: number;
+    condition?: string;
+    precipitation?: string;
+}
+
+interface ParsedOutfitStructure {
+    top?: string;
+    topColor?: string;
+    bottom?: string;
+    bottomColor?: string;
+    shoes?: string;
+    shoesColor?: string;
+    accessories?: string[];
+    accessoriesColor?: string;
+    outerwear?: string;
+    outerwearColor?: string;
+}
+
 export default function OutfitDetailsPage() {
   const { id } = useParams()
   const { user, loading: authLoading } = useAuth()
@@ -19,117 +55,66 @@ export default function OutfitDetailsPage() {
   const { toast } = useToast()
 
   const [loading, setLoading] = useState(true)
-  const [outfit, setOutfit] = useState<any>(null)
+  const [outfit, setOutfit] = useState<Outfit | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const fetchOutfitDetails = async () => {
-      if (!user) return
+    const fetchOutfit = async () => {
+      if (!user || !id) {
+        setLoading(false)
+        return
+      }
 
+      setLoading(true)
+      setError(null)
       try {
-        // In a real app, you would make an API call to your backend
-        // Mock API response
-        await new Promise((resolve) => setTimeout(resolve, 800))
+        const response = await fetch(`/api/outfits/${id}`)
 
-        // Mock outfit data based on ID
-        const mockOutfits = {
-          "1": {
-            id: "1",
-            destination: "Paris, France",
-            date: "2023-07-15",
-            occasion: "casual",
-            vibe: "minimal",
-            weather: {
-              temperature: 24,
-              condition: "Sunny",
-              precipitation: "0%",
-            },
-            outfit: {
-              top: "White linen shirt",
-              bottom: "Beige chino pants",
-              shoes: "Brown loafers",
-              accessories: ["Sunglasses", "Watch"],
-              outerwear: null,
-            },
-            imageUrl: "/placeholder.svg?height=400&width=300",
-            saved: "2023-05-10",
-            culturalNotes:
-              "Casual attire is acceptable in most Parisian venues, but locals tend to dress smartly even for casual occasions.",
-          },
-          "2": {
-            id: "2",
-            destination: "Tokyo, Japan",
-            date: "2023-09-22",
-            occasion: "business",
-            vibe: "elegant",
-            weather: {
-              temperature: 20,
-              condition: "Partly cloudy",
-              precipitation: "10%",
-            },
-            outfit: {
-              top: "Light blue dress shirt",
-              bottom: "Navy slacks",
-              shoes: "Black oxford shoes",
-              accessories: ["Tie", "Leather briefcase"],
-              outerwear: "Light blazer",
-            },
-            imageUrl: "/placeholder.svg?height=400&width=300",
-            saved: "2023-06-05",
-            culturalNotes:
-              "Business attire in Tokyo is typically conservative. Dark suits are common for business meetings.",
-          },
-          "3": {
-            id: "3",
-            destination: "Bali, Indonesia",
-            date: "2023-12-10",
-            occasion: "beach",
-            vibe: "bohemian",
-            weather: {
-              temperature: 30,
-              condition: "Sunny",
-              precipitation: "0%",
-            },
-            outfit: {
-              top: "Floral print shirt",
-              bottom: "Linen shorts",
-              shoes: "Sandals",
-              accessories: ["Straw hat", "Sunglasses"],
-              outerwear: null,
-            },
-            imageUrl: "/placeholder.svg?height=400&width=300",
-            saved: "2023-07-20",
-            culturalNotes:
-              "Lightweight, breathable clothing is recommended for Bali's tropical climate. When visiting temples, shoulders and knees should be covered.",
-          },
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error('Outfit not found.')
+          } else if (response.status === 401) {
+             throw new Error('Unauthorized to view this outfit.')
+          }
+           throw new Error('Failed to fetch outfit details.')
         }
 
-        // @ts-ignore - We know the ID is a string
-        const outfitData = mockOutfits[id]
-
-        if (outfitData) {
-          setOutfit(outfitData)
-        } else {
-          toast({
-            title: "Outfit not found",
-            description: "The requested outfit could not be found",
-            variant: "destructive",
-          })
-          router.push("/wardrobe")
+        const data = await response.json()
+        
+        // Attempt to parse nested JSON fields if they are strings
+        const parsedOutfit = { ...data }
+        if (typeof parsedOutfit.weather === 'string') {
+            try {
+                parsedOutfit.weather = JSON.parse(parsedOutfit.weather)
+            } catch (e) {
+                console.error('Failed to parse weather JSON:', e)
+            }
         }
-      } catch (error) {
+         if (typeof parsedOutfit.outfit === 'string') {
+            try {
+                parsedOutfit.outfit = JSON.parse(parsedOutfit.outfit)
+            } catch (e) {
+                 console.error('Failed to parse outfit structure JSON:', e)
+            }
+         }
+
+        setOutfit(parsedOutfit as Outfit) // Cast to Outfit type after parsing
+
+      } catch (err: any) {
+        setError(err.message)
         toast({
-          title: "Error",
-          description: "Failed to load outfit details. Please try again.",
-          variant: "destructive",
+            title: "Error loading outfit",
+            description: err.message,
+            variant: "destructive"
         })
-        console.error("Outfit details error:", error)
+        console.error('Error fetching outfit details:', err)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchOutfitDetails()
-  }, [id, user, router, toast])
+    fetchOutfit()
+  }, [id, user, toast])
 
   // Redirect to login if not authenticated
   if (!authLoading && !user) {
@@ -139,23 +124,28 @@ export default function OutfitDetailsPage() {
 
   const handleDeleteOutfit = async () => {
     try {
-      // In a real app, you would make an API call to your backend
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      const response = await fetch(`/api/outfits/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete outfit');
+      }
 
       toast({
         title: "Outfit deleted",
         description: "The outfit has been removed from your wardrobe",
-      })
+      });
 
-      router.push("/wardrobe")
+      router.push("/wardrobe");
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to delete outfit. Please try again.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const occasionMap: Record<string, string> = {
     business: "Business Meeting",
@@ -177,30 +167,41 @@ export default function OutfitDetailsPage() {
 
   if (loading) {
     return (
-      <div className="container py-12">
-        <div className="flex justify-center items-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin" />
-          <span className="ml-2">Loading outfit details...</span>
+      <div className="container py-12 flex justify-center items-center">
+        <Loader2 className="h-8 w-8 animate-spin mr-2" />
+        <span>Loading outfit...</span>
         </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="container py-12 text-center text-red-500">
+        <p>Error: {error}</p>
       </div>
     )
   }
 
   if (!outfit) {
     return (
-      <div className="container py-12">
-        <Card className="text-center py-12">
-          <CardContent>
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold">Outfit not found</h2>
-              <p className="text-muted-foreground">The requested outfit could not be found</p>
-              <Button asChild>
-                <Link href="/wardrobe">Back to Wardrobe</Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="container py-12 text-center">
+        <p>Outfit not found.</p>
       </div>
+    )
+  }
+
+  // Helper function to display outfit parts
+  const renderOutfitPart = (label: string, value: string | string[] | null | undefined, color?: string | null | undefined) => {
+    if (!value || (Array.isArray(value) && value.length === 0)) return null
+    const displayValue = Array.isArray(value) ? value.join(', ') : value
+    return (
+        <li className="flex items-start gap-2">
+            <span className="font-semibold text-sm">{label}:</span>
+            <span className="text-sm">
+              {displayValue}
+              {color && <span className="text-muted-foreground"> ({color})</span>}
+            </span>
+        </li>
     )
   }
 
@@ -221,8 +222,8 @@ export default function OutfitDetailsPage() {
           <CardHeader>
             <div className="flex justify-between items-start">
               <div>
-                <CardTitle className="text-2xl">{outfit.destination}</CardTitle>
-                <CardDescription>Saved on {new Date(outfit.saved).toLocaleDateString()}</CardDescription>
+                <CardTitle className="text-2xl">{outfit.name || 'Outfit Details'}</CardTitle>
+                <CardDescription>Saved on {new Date(outfit.updatedAt).toLocaleDateString()}</CardDescription>
               </div>
               <Button variant="destructive" size="sm" onClick={handleDeleteOutfit}>
                 <Trash2 className="h-4 w-4 mr-2" />
@@ -242,7 +243,7 @@ export default function OutfitDetailsPage() {
                     <div className="relative w-full max-w-[300px] h-[400px] bg-muted rounded-md overflow-hidden">
                       <Image
                         src={outfit.imageUrl || "/placeholder.svg"}
-                        alt="Outfit recommendation"
+                        alt={`Outfit for ${outfit.destination || 'your trip'}`}
                         fill
                         className="object-cover"
                       />
@@ -250,52 +251,25 @@ export default function OutfitDetailsPage() {
                   </div>
                   <div className="space-y-6">
                     <div>
-                      <h3 className="text-lg font-semibold mb-2">Recommended Outfit</h3>
+                      <h3 className="text-lg font-semibold mb-2">Outfit Breakdown</h3>
                       <ul className="space-y-2">
-                        <li className="flex items-start gap-2">
-                          <Badge variant="outline" className="mt-0.5">
-                            Top
-                          </Badge>
-                          <span>{outfit.outfit.top}</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <Badge variant="outline" className="mt-0.5">
-                            Bottom
-                          </Badge>
-                          <span>{outfit.outfit.bottom}</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <Badge variant="outline" className="mt-0.5">
-                            Shoes
-                          </Badge>
-                          <span>{outfit.outfit.shoes}</span>
-                        </li>
-                        {outfit.outfit.outerwear && (
-                          <li className="flex items-start gap-2">
-                            <Badge variant="outline" className="mt-0.5">
-                              Outerwear
-                            </Badge>
-                            <span>{outfit.outfit.outerwear}</span>
-                          </li>
-                        )}
-                        <li className="flex items-start gap-2">
-                          <Badge variant="outline" className="mt-0.5">
-                            Accessories
-                          </Badge>
-                          <span>{outfit.outfit.accessories.join(", ")}</span>
-                        </li>
+                        {renderOutfitPart('Top', (outfit.outfit as ParsedOutfitStructure)?.top, (outfit.outfit as ParsedOutfitStructure)?.topColor)}
+                        {renderOutfitPart('Bottom', (outfit.outfit as ParsedOutfitStructure)?.bottom, (outfit.outfit as ParsedOutfitStructure)?.bottomColor)}
+                        {renderOutfitPart('Shoes', (outfit.outfit as ParsedOutfitStructure)?.shoes, (outfit.outfit as ParsedOutfitStructure)?.shoesColor)}
+                        {renderOutfitPart('Accessories', (outfit.outfit as ParsedOutfitStructure)?.accessories, (outfit.outfit as ParsedOutfitStructure)?.accessoriesColor)}
+                        {renderOutfitPart('Outerwear', (outfit.outfit as ParsedOutfitStructure)?.outerwear, (outfit.outfit as ParsedOutfitStructure)?.outerwearColor)}
                       </ul>
                     </div>
 
                     <div>
                       <h3 className="text-lg font-semibold mb-2">Weather</h3>
-                      <div className="flex items-center gap-4">
+                      <div className="flex flex-wrap items-center gap-2 text-base">
                         <div className="flex items-center gap-2">
-                          <ThermometerSun className="h-4 w-4" />
-                          <span>{outfit.weather.temperature}°C</span>
+                          <ThermometerSun className="h-4 w-4 text-muted-foreground" />
+                          <span>{outfit.weather?.temperature}°C</span>
                         </div>
-                        <div>{outfit.weather.condition}</div>
-                        <div>Precipitation: {outfit.weather.precipitation}</div>
+                        <span>{outfit.weather?.condition}</span>
+                        <span>Precipitation: {outfit.weather?.precipitation}</span>
                       </div>
                     </div>
 
@@ -313,7 +287,7 @@ export default function OutfitDetailsPage() {
                       <MapPin className="h-5 w-5 text-primary" />
                       <div>
                         <h3 className="font-medium">Destination</h3>
-                        <p>{outfit.destination}</p>
+                        <p>{outfit.destination || 'N/A'}</p>
                       </div>
                     </div>
 
@@ -322,12 +296,12 @@ export default function OutfitDetailsPage() {
                       <div>
                         <h3 className="font-medium">Travel Date</h3>
                         <p>
-                          {new Date(outfit.date).toLocaleDateString("en-US", {
+                          {outfit.date ? new Date(outfit.date).toLocaleDateString("en-US", {
                             weekday: "long",
                             year: "numeric",
                             month: "long",
                             day: "numeric",
-                          })}
+                          }) : 'N/A'}
                         </p>
                       </div>
                     </div>
@@ -338,7 +312,7 @@ export default function OutfitDetailsPage() {
                       <Tag className="h-5 w-5 text-primary" />
                       <div>
                         <h3 className="font-medium">Occasion</h3>
-                        <p>{occasionMap[outfit.occasion] || outfit.occasion}</p>
+                        <p>{outfit.occasion ? occasionMap[outfit.occasion] || outfit.occasion : 'N/A'}</p>
                       </div>
                     </div>
 
@@ -346,7 +320,7 @@ export default function OutfitDetailsPage() {
                       <Sparkles className="h-5 w-5 text-primary" />
                       <div>
                         <h3 className="font-medium">Vibe</h3>
-                        <p>{vibeMap[outfit.vibe] || outfit.vibe}</p>
+                        <p>{outfit.vibe ? vibeMap[outfit.vibe] || outfit.vibe : 'N/A'}</p>
                       </div>
                     </div>
                   </div>

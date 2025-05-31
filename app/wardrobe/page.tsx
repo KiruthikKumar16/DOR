@@ -18,88 +18,25 @@ export default function WardrobePage() {
   const [loading, setLoading] = useState(true)
   const [outfits, setOutfits] = useState<any[]>([])
 
-  useEffect(() => {
+  // Define fetchOutfits outside useEffect
     const fetchOutfits = async () => {
-      if (!user) return
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
-      try {
-        // Simulate API call delay
-        await new Promise((resolve) => setTimeout(resolve, 1000))
+    setLoading(true);
+    try {
+      // Fetch outfits from the backend API
+      const response = await fetch('/api/outfits');
 
-        // Get outfits from localStorage
-        const savedOutfits = localStorage.getItem("savedOutfits")
-        if (savedOutfits) {
-          setOutfits(JSON.parse(savedOutfits))
-        } else {
-          // Mock outfit data for demo
-          const mockOutfits = [
-            {
-              id: "1",
-              destination: "Paris, France",
-              date: "2023-07-15",
-              occasion: "casual",
-              vibe: "minimal",
-              weather: {
-                temperature: 24,
-                condition: "Sunny",
-                precipitation: "0%",
-              },
-              outfit: {
-                top: "White linen shirt",
-                bottom: "Beige chino pants",
-                shoes: "Brown loafers",
-                accessories: ["Sunglasses", "Watch"],
-                outerwear: null,
-              },
-              imageUrl: "/placeholder.svg?height=400&width=300",
-              saved: "2023-05-10",
-            },
-            {
-              id: "2",
-              destination: "Tokyo, Japan",
-              date: "2023-09-22",
-              occasion: "business",
-              vibe: "elegant",
-              weather: {
-                temperature: 20,
-                condition: "Partly cloudy",
-                precipitation: "10%",
-              },
-              outfit: {
-                top: "Light blue dress shirt",
-                bottom: "Navy slacks",
-                shoes: "Black oxford shoes",
-                accessories: ["Tie", "Leather briefcase"],
-                outerwear: "Light blazer",
-              },
-              imageUrl: "/placeholder.svg?height=400&width=300",
-              saved: "2023-06-05",
-            },
-            {
-              id: "3",
-              destination: "Bali, Indonesia",
-              date: "2023-12-10",
-              occasion: "beach",
-              vibe: "bohemian",
-              weather: {
-                temperature: 30,
-                condition: "Sunny",
-                precipitation: "0%",
-              },
-              outfit: {
-                top: "Floral print shirt",
-                bottom: "Linen shorts",
-                shoes: "Sandals",
-                accessories: ["Straw hat", "Sunglasses"],
-                outerwear: null,
-              },
-              imageUrl: "/placeholder.svg?height=400&width=300",
-              saved: "2023-07-20",
-            },
-          ]
-          setOutfits(mockOutfits)
-          localStorage.setItem("savedOutfits", JSON.stringify(mockOutfits))
-        }
+      if (!response.ok) {
+        throw new Error('Failed to fetch outfits');
+      }
+
+      const data = await response.json();
+      setOutfits(data);
+
       } catch (error) {
         toast({
           title: "Error",
@@ -112,8 +49,11 @@ export default function WardrobePage() {
       }
     }
 
-    fetchOutfits()
-  }, [user, toast])
+  useEffect(() => {
+    if (user) {
+      fetchOutfits();
+    }
+  }, [user, toast]); // Add toast to dependency array
 
   // Redirect to login if not authenticated
   if (!authLoading && !user) {
@@ -121,28 +61,31 @@ export default function WardrobePage() {
     return null
   }
 
-  const handleDeleteOutfit = async (id: string) => {
+  const handleDeleteOutfit = async (outfitId: string) => {
     try {
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      const response = await fetch(`/api/outfits/${outfitId}`, {
+        method: 'DELETE',
+      });
 
-      // Update local state and localStorage
-      const updatedOutfits = outfits.filter((outfit) => outfit.id !== id)
-      setOutfits(updatedOutfits)
-      localStorage.setItem("savedOutfits", JSON.stringify(updatedOutfits))
+      if (!response.ok) {
+        throw new Error('Failed to delete outfit');
+      }
 
       toast({
         title: "Outfit deleted",
         description: "The outfit has been removed from your wardrobe",
-      })
+      });
+
+      // Refresh the outfits list
+      fetchOutfits();
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to delete outfit. Please try again.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const occasionMap: Record<string, string> = {
     business: "Business Meeting",
