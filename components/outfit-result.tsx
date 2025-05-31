@@ -182,7 +182,7 @@ export default function OutfitResult({ result, onReset, onRegenerateOutfit, onUp
       // Update the outfit data AND the image URL in the parent component's state
       onUpdateOutfit(editedOutfit, result.currentOutfitIndex, newImageUrl, result.culturalNotes);
 
-      toast({
+    toast({
         title: "Outfit updated and saved!",
         description: newImageUrl && newImageUrl !== "/placeholder.svg?height=400&width=300" ? "Your outfit and image have been updated and saved successfully." : "Your outfit has been updated and saved. Image regeneration failed.",
       });

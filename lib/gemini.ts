@@ -148,7 +148,7 @@ export async function getOutfitRecommendation(
  * Returns a data URL (base64 encoded image) or null if generation fails.
  */
 export async function generateOutfitImage(outfitRecommendation: any): Promise<string | null> {
-    try {
+  try {
         // Get the model
         const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-preview-image-generation' });
 
@@ -191,8 +191,8 @@ export async function generateOutfitImage(outfitRecommendation: any): Promise<st
             return "/placeholder.svg?height=400&width=300";
         }
 
-    } catch (error) {
+  } catch (error) {
         console.error('Error generating outfit image with Gemini:', error);
         return "/placeholder.svg?height=400&width=300";
-    }
+  }
 } 
