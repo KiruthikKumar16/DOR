@@ -51,9 +51,9 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
       }
       return baseUrl;
     },
-    async session({ session, user }) {
+    async session({ session, token }: { session: Session; token: JWT }) {
       if (session.user) {
-        session.user.id = user.id;
+        session.user.id = token.sub as string;
       }
       return session;
     },
@@ -61,15 +61,15 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
       console.log("Sign-in attempt with Google", user);
       return true;
     },
-    async jwt({ token, user, account, profile, isNewUser, trigger, session }: { token: JWT; user: AdapterUser | User; account?: Account | null | undefined; profile?: Profile | undefined; isNewUser?: boolean | undefined; trigger?: "signIn" | "signUp" | "update" | undefined; session?: any }): Promise<JWT> {
+    async jwt({ token, user, account, profile, isNewUser, trigger, session }: { token: JWT; user: AdapterUser | User; account?: Account | null; profile?: Profile; isNewUser?: boolean; trigger?: "signIn" | "signUp" | "update"; session?: any }): Promise<JWT> {
       if (user) {
+        token.id = user.id;
         token.sub = user.id;
       }
-      // Add isNewUser to the token
       if (isNewUser !== undefined) {
         token.isNewUser = isNewUser;
       }
-      return token; 
+      return token;
     },
   },
   pages: {
