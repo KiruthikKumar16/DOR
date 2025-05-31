@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../auth/[...nextauth]/route';
+import { auth } from "@/auth";
 import { prisma } from '@/lib/prisma';
 
 interface SessionUser {
@@ -13,7 +12,7 @@ interface SessionUser {
 // Get all wardrobe items
 export async function GET(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     const user = session?.user as SessionUser | null;
     
     if (!user?.id) {
@@ -36,7 +35,7 @@ export async function GET(request: Request) {
 // Add new wardrobe item
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     const user = session?.user as SessionUser | null;
     
     if (!user?.id) {
@@ -72,7 +71,7 @@ export async function POST(request: Request) {
 // Update wardrobe item
 export async function PUT(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     const user = session?.user as SessionUser | null;
     
     if (!user?.id) {
@@ -111,7 +110,7 @@ export async function PUT(request: Request) {
 // Delete wardrobe item
 export async function DELETE(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     const user = session?.user as SessionUser | null;
     
     if (!user?.id) {

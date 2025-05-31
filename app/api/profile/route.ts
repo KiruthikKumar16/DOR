@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../auth/[...nextauth]/route';
+import { auth } from "@/auth";
 import { prisma } from '@/lib/prisma';
 
 interface SessionUser {
@@ -13,7 +12,7 @@ interface SessionUser {
 // Get user profile
 export async function GET(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     const user = session?.user as SessionUser | null;
     
     if (!user?.id) {
@@ -45,7 +44,7 @@ export async function GET(request: Request) {
 // Update user profile
 export async function PUT(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     const user = session?.user as SessionUser | null;
     
     if (!user?.id) {
@@ -102,7 +101,7 @@ export async function PUT(request: Request) {
 // Update profile picture
 export async function PATCH(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     const user = session?.user as SessionUser | null;
     
     if (!user?.id) {
