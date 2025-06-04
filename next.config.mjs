@@ -10,7 +10,10 @@ const nextConfig = {
     ],
   },
   experimental: {
-    serverActions: true,
+    serverActions: {
+      allowedOrigins: ['*'],
+      bodySizeLimit: '2mb'
+    },
   },
 }
 
