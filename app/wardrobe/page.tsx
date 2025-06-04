@@ -55,11 +55,12 @@ export default function WardrobePage() {
     }
   }, [user, toast]); // Add toast to dependency array
 
-  // Redirect to login if not authenticated
-  if (!authLoading && !user) {
-    router.push("/login")
-    return null
-  }
+  // Handle authentication redirect
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/login");
+    }
+  }, [authLoading, user, router]);
 
   const handleDeleteOutfit = async (outfitId: string) => {
     try {

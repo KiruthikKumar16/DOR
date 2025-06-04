@@ -111,7 +111,7 @@ export default function HomePage() {
             </div>
             <div className="flex flex-col gap-2 min-[400px]:flex-row">
               <Button asChild size="lg" className="w-full min-[400px]:w-auto">
-                <Link href="/signup">Create Account</Link>
+                <Link href="/login">Create Account</Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="w-full min-[400px]:w-auto">
                 <Link href="/about">Learn More</Link>
