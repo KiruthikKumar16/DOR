@@ -12,7 +12,7 @@ interface SessionUser {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { outfitId: string } }
+  context: { params: { outfitId: string } }
 ) {
   try {
     const session = await auth();
@@ -23,7 +23,7 @@ export async function GET(
     const user = session.user as SessionUser;
     const outfit = await prisma.outfit.findUnique({
       where: {
-        id: params.outfitId,
+        id: context.params.outfitId,
         userId: user.id
       }
     });
@@ -41,7 +41,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { outfitId: string } }
+  context: { params: { outfitId: string } }
 ) {
   try {
     const session = await auth();
@@ -61,7 +61,7 @@ export async function POST(
       where: {
         userId_outfitId: {
           userId: user.id,
-          outfitId: params.outfitId
+          outfitId: context.params.outfitId
         }
       },
       update: {
@@ -69,7 +69,7 @@ export async function POST(
       },
       create: {
         userId: user.id,
-        outfitId: params.outfitId,
+        outfitId: context.params.outfitId,
         rating
       }
     });
@@ -83,7 +83,7 @@ export async function POST(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { outfitId: string } }
+  context: { params: { outfitId: string } }
 ) {
   try {
     const session = await auth();
@@ -94,7 +94,7 @@ export async function PATCH(
     const user = session.user as SessionUser;
     const outfit = await prisma.outfit.update({
       where: {
-        id: params.outfitId,
+        id: context.params.outfitId,
         userId: user.id
       },
       data: {
@@ -111,7 +111,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { outfitId: string } }
+  context: { params: { outfitId: string } }
 ) {
   try {
     const session = await auth();
@@ -122,7 +122,7 @@ export async function DELETE(
     const user = session.user as SessionUser;
     await prisma.outfit.delete({
       where: {
-        id: params.outfitId,
+        id: context.params.outfitId,
         userId: user.id
       }
     });
