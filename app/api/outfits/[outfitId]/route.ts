@@ -13,9 +13,9 @@ interface SessionUser {
 // Get outfit details
 export async function GET(
   request: NextRequest,
-  context: { params: { outfitId: string } }
+  { params }: { params: { outfitId: string } }
 ) {
-  const { outfitId } = context.params;
+  const { outfitId } = params;
   try {
     const session = await auth();
     const user = session?.user as SessionUser | null;
@@ -61,9 +61,9 @@ export async function GET(
 // Rate outfit
 export async function POST(
   request: NextRequest,
-  context: { params: { outfitId: string } }
+  { params }: { params: { outfitId: string } }
 ) {
-  const { outfitId } = context.params;
+  const { outfitId } = params;
   try {
     const session = await auth();
     const user = session?.user as SessionUser | null;
@@ -108,9 +108,9 @@ export async function POST(
 // Toggle outfit publicity and generate share URL
 export async function PATCH(
   request: NextRequest,
-  context: { params: { outfitId: string } }
+  { params }: { params: { outfitId: string } }
 ) {
-  const { outfitId } = context.params;
+  const { outfitId } = params;
   try {
     const session = await auth();
     const user = session?.user as SessionUser | null;
@@ -144,9 +144,9 @@ export async function PATCH(
 // Delete outfit
 export async function DELETE(
   request: NextRequest,
-  context: { params: { outfitId: string } }
+  { params }: { params: { outfitId: string } }
 ) {
-  const { outfitId } = context.params;
+  const { outfitId } = params;
   try {
     const session = await auth();
     const user = session?.user as SessionUser | null;
