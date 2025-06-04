@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { nanoid } from 'nanoid';
@@ -12,7 +12,7 @@ interface SessionUser {
 
 // Get outfit details
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { outfitId: string } }
 ) {
   try {
