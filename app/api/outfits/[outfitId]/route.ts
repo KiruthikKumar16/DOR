@@ -13,8 +13,9 @@ interface SessionUser {
 // Get outfit details
 export async function GET(
   request: NextRequest,
-  { params }: { params: { outfitId: string } }
+  context: { params: { outfitId: string } }
 ) {
+  const { outfitId } = context.params;
   try {
     const session = await auth();
     const user = session?.user as SessionUser | null;
@@ -25,7 +26,7 @@ export async function GET(
 
     const outfit = await prisma.outfit.findFirst({
       where: {
-        id: params.outfitId,
+        id: outfitId,
         OR: [
           { userId: user.id },
           { isPublic: true }
@@ -59,9 +60,10 @@ export async function GET(
 
 // Rate outfit
 export async function POST(
-  request: Request,
-  { params }: { params: { outfitId: string } }
+  request: NextRequest,
+  context: { params: { outfitId: string } }
 ) {
+  const { outfitId } = context.params;
   try {
     const session = await auth();
     const user = session?.user as SessionUser | null;
@@ -81,7 +83,7 @@ export async function POST(
       where: {
         userId_outfitId: {
           userId: user.id,
-          outfitId: params.outfitId
+          outfitId: outfitId
         }
       },
       update: {
@@ -90,7 +92,7 @@ export async function POST(
       },
       create: {
         userId: user.id,
-        outfitId: params.outfitId,
+        outfitId: outfitId,
         rating,
         comment
       }
@@ -105,9 +107,10 @@ export async function POST(
 
 // Toggle outfit publicity and generate share URL
 export async function PATCH(
-  request: Request,
-  { params }: { params: { outfitId: string } }
+  request: NextRequest,
+  context: { params: { outfitId: string } }
 ) {
+  const { outfitId } = context.params;
   try {
     const session = await auth();
     const user = session?.user as SessionUser | null;
@@ -121,7 +124,7 @@ export async function PATCH(
 
     const outfit = await prisma.outfit.update({
       where: {
-        id: params.outfitId,
+        id: outfitId,
         userId: user.id
       },
       data: {
@@ -140,9 +143,10 @@ export async function PATCH(
 
 // Delete outfit
 export async function DELETE(
-  request: Request,
-  { params }: { params: { outfitId: string } }
+  request: NextRequest,
+  context: { params: { outfitId: string } }
 ) {
+  const { outfitId } = context.params;
   try {
     const session = await auth();
     const user = session?.user as SessionUser | null;
@@ -153,7 +157,7 @@ export async function DELETE(
 
     await prisma.outfit.delete({
       where: {
-        id: params.outfitId,
+        id: outfitId,
         userId: user.id
       }
     });
