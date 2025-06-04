@@ -10,9 +10,15 @@ interface SessionUser {
   image?: string | null;
 }
 
+type RouteContext = {
+  params: {
+    outfitId: string;
+  };
+};
+
 export async function GET(
   request: NextRequest,
-  context: { params: { outfitId: string } }
+  context: RouteContext
 ) {
   try {
     const session = await auth();
@@ -41,7 +47,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  context: { params: { outfitId: string } }
+  context: RouteContext
 ) {
   try {
     const session = await auth();
@@ -83,7 +89,7 @@ export async function POST(
 
 export async function PATCH(
   request: NextRequest,
-  context: { params: { outfitId: string } }
+  context: RouteContext
 ) {
   try {
     const session = await auth();
@@ -111,7 +117,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  context: { params: { outfitId: string } }
+  context: RouteContext
 ) {
   try {
     const session = await auth();
