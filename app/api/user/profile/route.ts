@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from 'next/server';
 // import { getServerSession } from "next-auth" // Remove v4 import
 import { prisma } from "@/lib/prisma"
 // import { authOptions } from "@/lib/auth" // authOptions is not needed directly here in v5
@@ -11,7 +11,7 @@ interface SessionUser {
   image?: string | null
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     // Use the v5 auth() function to get the session
     const session = await auth()
@@ -58,7 +58,7 @@ export async function GET() {
   }
 }
 
-export async function PUT(req: Request) {
+export async function PUT(request: NextRequest) {
   try {
     // Use the v5 auth() function to get the session
     const session = await auth()
@@ -67,7 +67,7 @@ export async function PUT(req: Request) {
       return new NextResponse("Unauthorized", { status: 401 })
     }
 
-    const body = await req.json()
+    const body = await request.json()
     const { gender, height, weight, bodyType } = body
 
     // Create or update profile

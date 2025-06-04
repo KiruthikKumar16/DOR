@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { auth } from "@/auth";
 import { prisma } from '@/lib/prisma';
 
@@ -10,7 +10,7 @@ interface SessionUser {
 }
 
 // Get all wardrobe items
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const session = await auth();
     const user = session?.user as SessionUser | null;
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
 }
 
 // Add new wardrobe item
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const session = await auth();
     const user = session?.user as SessionUser | null;

@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from "@/auth";
 import { Outfit as PrismaOutfit } from '@prisma/client'; // Import the actual Outfit model type from Prisma
@@ -25,21 +25,27 @@ interface PostOutfitRequestBody {
 
 // Define interfaces for the structure of weather and outfit data after parsing JSON
 interface ParsedWeatherData {
-    temperature?: number;
-    condition?: string;
-    // Add other weather properties as needed
+    temperature: number;
+    feelsLike: number;
+    description: string;
+    icon: string;
+    humidity: number;
+    windSpeed: number;
+    city: string;
+    country: string;
+    dateTime: string;
+    precipitation: number;
 }
 
 interface ParsedOutfitStructure {
-    top: string;
-    bottom: string;
-    shoes: string;
-    accessories?: string[];
-    outerwear?: string;
-    // Add other outfit part properties as needed
+    top?: string;
+    bottom?: string;
+    shoes?: string;
+    accessories?: string;
+    layers?: string;
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -101,7 +107,7 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.id) {

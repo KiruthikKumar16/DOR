@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 
 interface WeatherResponse {
@@ -14,7 +14,7 @@ interface WeatherResponse {
   precipitation: number;
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const destination = searchParams.get('destination');
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
         `https://api.openweathermap.org/data/2.5/weather?q=${destination}&units=metric&appid=${process.env.OPENWEATHER_API_KEY}`
       );
 
-    const weatherData = {
+      const weatherData = {
         temperature: response.data.main.temp,
         feelsLike: response.data.main.feels_like,
         description: response.data.weather[0].description,
@@ -49,9 +49,9 @@ export async function GET(request: Request) {
         country: response.data.sys.country,
         dateTime: new Date().toISOString(),
         precipitation: response.data.rain ? response.data.rain['1h'] || 0 : 0
-    };
+      };
 
-    return NextResponse.json(weatherData);
+      return NextResponse.json(weatherData);
     } catch (error) {
       // If the location is not found, return default weather data
       if (axios.isAxiosError(error) && error.response?.status === 404) {
@@ -78,9 +78,9 @@ export async function GET(request: Request) {
       throw error;
     }
   } catch (error) {
-    console.error('Error fetching weather:', error);
+    console.error('Error in weather route:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch weather data' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
