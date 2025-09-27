@@ -49,14 +49,10 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setLoading(true)
     try {
-      const result = await signIn("google", { 
+      await signIn("google", { 
         callbackUrl: "/",
         redirect: true
       })
-      
-      if (result && 'error' in result && result.error) {
-        throw new Error(result.error)
-      }
     } catch (error) {
       console.error("Login error:", error)
       toast({
