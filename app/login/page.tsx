@@ -54,7 +54,7 @@ export default function LoginPage() {
         redirect: true
       })
       
-      if (result?.error) {
+      if (result && 'error' in result && result.error) {
         throw new Error(result.error)
       }
     } catch (error) {
