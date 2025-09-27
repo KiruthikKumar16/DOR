@@ -1,13 +1,8 @@
 // auth.ts
-import NextAuth, { type DefaultSession, type User } from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
+import NextAuth, { type DefaultSession, type User, type Account, type Profile, type Session } from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
-// Import necessary types from next-auth and adapter
-import { type Account, type Profile } from "next-auth";
-import { type AdapterUser } from "@auth/core/adapters";
 import type { JWT } from "next-auth/jwt";
-import type { Session } from "next-auth";
 import { authConfig } from "./auth.config";
 import Google from "next-auth/providers/google";
 
@@ -61,7 +56,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
       console.log("Sign-in attempt with Google", user);
       return true;
     },
-    async jwt({ token, user, account, profile, isNewUser, trigger, session }: { token: JWT; user: AdapterUser | User; account?: Account | null; profile?: Profile; isNewUser?: boolean; trigger?: "signIn" | "signUp" | "update"; session?: any }): Promise<JWT> {
+    async jwt({ token, user, account, profile, isNewUser, trigger, session }: { token: JWT; user: User; account?: Account | null; profile?: Profile; isNewUser?: boolean; trigger?: "signIn" | "signUp" | "update"; session?: any }): Promise<JWT> {
       if (user) {
         token.id = user.id;
         token.sub = user.id;
