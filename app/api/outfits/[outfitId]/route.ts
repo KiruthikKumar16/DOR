@@ -12,7 +12,7 @@ interface SessionUser {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { outfitId: string } }
+  { params }: { params: Promise<{ outfitId: string }> }
 ) {
   try {
     const session = await auth();
@@ -20,10 +20,11 @@ export async function GET(
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
+    const { outfitId } = await params;
     const user = session.user as SessionUser;
     const outfit = await prisma.outfit.findUnique({
       where: {
-        id: params.outfitId,
+        id: outfitId,
         userId: user.id
       }
     });
@@ -41,7 +42,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { outfitId: string } }
+  { params }: { params: Promise<{ outfitId: string }> }
 ) {
   try {
     const session = await auth();
@@ -49,6 +50,7 @@ export async function POST(
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
+    const { outfitId } = await params;
     const user = session.user as SessionUser;
     const body = await request.json();
     const { rating } = body;
@@ -61,7 +63,7 @@ export async function POST(
       where: {
         userId_outfitId: {
           userId: user.id,
-          outfitId: params.outfitId
+          outfitId: outfitId
         }
       },
       update: {
@@ -69,7 +71,7 @@ export async function POST(
       },
       create: {
         userId: user.id,
-        outfitId: params.outfitId,
+        outfitId: outfitId,
         rating
       }
     });
@@ -83,7 +85,7 @@ export async function POST(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { outfitId: string } }
+  { params }: { params: Promise<{ outfitId: string }> }
 ) {
   try {
     const session = await auth();
@@ -91,10 +93,11 @@ export async function PATCH(
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
+    const { outfitId } = await params;
     const user = session.user as SessionUser;
     const outfit = await prisma.outfit.update({
       where: {
-        id: params.outfitId,
+        id: outfitId,
         userId: user.id
       },
       data: {
@@ -111,7 +114,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { outfitId: string } }
+  { params }: { params: Promise<{ outfitId: string }> }
 ) {
   try {
     const session = await auth();
@@ -119,10 +122,11 @@ export async function DELETE(
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
+    const { outfitId } = await params;
     const user = session.user as SessionUser;
     await prisma.outfit.delete({
       where: {
-        id: params.outfitId,
+        id: outfitId,
         userId: user.id
       }
     });
