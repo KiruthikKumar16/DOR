@@ -8,8 +8,8 @@ if (!process.env.GEMINI_API_KEY) {
 // Initialize the API client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
-// Use Gemini 1.5 Flash model for text generation
-const TEXT_MODEL = 'gemini-1.5-flash';
+// Use Gemini 2.0 Flash model for text generation
+const TEXT_MODEL = 'gemini-2.0-flash-exp';
 // Use Gemini 2.0 Flash Preview for image generation
 const IMAGE_MODEL = 'gemini-2.0-flash-preview-image-generation';
 

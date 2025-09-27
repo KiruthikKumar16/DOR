@@ -193,7 +193,7 @@ Please provide a brief cultural note (maximum 25 words) about local dress custom
     try {
       // 6. Get recommendations from Gemini with retry logic
       const model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
+        model: "gemini-2.0-flash-exp",
         generationConfig: {
           temperature: 1.0,
           topK: 40,

@@ -90,12 +90,12 @@ export async function GET() {
       }
 
       const genAI = new GoogleGenerativeAI(GOOGLE_AI_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
       const result = await model.generateContent('Test message');
       const response = await result.response;
       results.recommendations.status = 'working';
       results.recommendations.details = {
-        model: 'gemini-pro',
+        model: 'gemini-2.0-flash-exp',
         responseLength: response.text().length
       };
     } catch (error) {
