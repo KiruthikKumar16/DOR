@@ -53,9 +53,9 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json(weatherData);
     } catch (error) {
-      // If the location is not found, return default weather data
-      if (axios.isAxiosError(error) && error.response?.status === 404) {
-        console.log(`Location "${destination}" not found in OpenWeather API, using default weather data`);
+      // If the location is not found OR API key is invalid, return default weather data
+      if (axios.isAxiosError(error) && (error.response?.status === 404 || error.response?.status === 401)) {
+        console.log(`Location "${destination}" not found or API key invalid, using default weather data`);
         
         // Return default weather data for the location
         const defaultWeatherData = {
