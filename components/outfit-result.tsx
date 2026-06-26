@@ -306,14 +306,14 @@ export default function OutfitResult({ result, onReset, onRegenerateOutfit, onUp
                           {currentOutfit.shoesColor && <span className="text-muted-foreground"> ({currentOutfit.shoesColor})</span>}
                         </span>
                       </li>
-                      {currentOutfit.outerwear && (
+                      {currentOutfit.outerwear && currentOutfit.outerwear !== "N/A" && currentOutfit.outerwear !== "Not applicable" && (
                         <li className="flex items-start">
                           <Badge variant="outline" className="w-20 text-start flex-shrink-0 text-xs">
                             Outerwear
                           </Badge>
                           <span className="text-sm md:text-base ml-2">
                             {currentOutfit.outerwear}
-                            {currentOutfit.outerwearColor && <span className="text-muted-foreground"> ({currentOutfit.outerwearColor})</span>}
+                            {currentOutfit.outerwearColor && currentOutfit.outerwearColor !== "N/A" && <span className="text-muted-foreground"> ({currentOutfit.outerwearColor})</span>}
                           </span>
                         </li>
                       )}
