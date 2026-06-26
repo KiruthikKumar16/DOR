@@ -16,9 +16,11 @@ export interface WeatherData {
 
 async function tryLocationFormat(location: string, apiKey: string): Promise<WeatherData | null> {
   try {
+    console.log(`Trying weather location: ${location}`);
     const response = await axios.get(
       `https://api.openweathermap.org/data/2.5/weather?q=${location}&units=metric&appid=${apiKey}`
     );
+    console.log(`Weather success for: ${location}`);
     return {
       temperature: response.data.main.temp,
       feelsLike: response.data.main.feels_like,
@@ -31,7 +33,8 @@ async function tryLocationFormat(location: string, apiKey: string): Promise<Weat
       dateTime: new Date().toISOString(),
       precipitation: response.data.rain ? response.data.rain['1h'] || 0 : 0
     };
-  } catch (error) {
+  } catch (error: any) {
+    console.log(`Weather error for ${location}:`, error.response?.data || error.message);
     return null;
   }
 }
