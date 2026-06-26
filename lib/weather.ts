@@ -40,6 +40,7 @@ async function tryLocationFormat(location: string, apiKey: string): Promise<Weat
 }
 
 export async function getWeatherData(location: string): Promise<WeatherData> {
+  console.log("OPENWEATHER_API_KEY loaded:", !!process.env.OPENWEATHER_API_KEY);
   if (!process.env.OPENWEATHER_API_KEY) {
     throw new Error('Weather API key not configured');
   }
