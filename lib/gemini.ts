@@ -10,8 +10,8 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 // Use Gemini 2.5 Flash model for text generation (latest free stable)
 const TEXT_MODEL = 'gemini-2.5-flash';
-// Use Gemini 2.5 Flash for image generation
-const IMAGE_MODEL = 'gemini-2.5-flash';
+// Use Gemini 2.5 Flash Image for image generation
+const IMAGE_MODEL = 'gemini-2.5-flash-image';
 
 export async function getOutfitRecommendation(
   weather: string,
@@ -89,6 +89,43 @@ export async function getOutfitRecommendation(
 }
 
 export async function generateOutfitImage(outfitRecommendation: any): Promise<string | null> {
-  // Use placeholder image since Gemini 2.5 doesn't support image generation
-  return "/placeholder.svg?height=400&width=300";
+  try {
+    const model = genAI.getGenerativeModel({ model: IMAGE_MODEL });
+
+    const promptForGemini = `Generate a realistic image of a person wearing the following outfit. Focus on the visual details of the clothing items and the overall style. Keep the background simple and neutral.
+
+    Outfit Description:
+    Top: ${outfitRecommendation.outfit.top} (${outfitRecommendation.outfit.topColor})
+    Bottom: ${outfitRecommendation.outfit.bottom} (${outfitRecommendation.outfit.bottomColor})
+    Shoes: ${outfitRecommendation.outfit.shoes} (${outfitRecommendation.outfit.shoesColor})
+    Accessories: ${outfitRecommendation.outfit.accessories.join(", ")} (${outfitRecommendation.outfit.accessoriesColor})
+    ${outfitRecommendation.outfit.outerwear && outfitRecommendation.outfit.outerwear !== "N/A" && outfitRecommendation.outfit.outerwear !== "Not applicable" ? `Outerwear: ${outfitRecommendation.outfit.outerwear} (${outfitRecommendation.outfit.outerwearColor})` : ''}
+
+    Style: ${outfitRecommendation.vibe}
+    Occasion: ${outfitRecommendation.occasion}
+    Weather: Temperature ${outfitRecommendation.weather.temperature}°C, ${outfitRecommendation.weather.condition}
+
+    Please generate a high-quality, realistic image of this outfit. The image should be clear, well-lit, and show the outfit details accurately.`;
+
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: promptForGemini }] }],
+      generationConfig: {
+        responseModalities: ["TEXT", "IMAGE"],
+      } as any,
+    });
+
+    const response = result.response;
+    const imagePart = response.candidates?.[0]?.content?.parts?.find(
+      part => part.inlineData?.mimeType?.startsWith('image/')
+    );
+
+    if (imagePart?.inlineData?.data) {
+      return `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`;
+    }
+
+    return "/placeholder.svg?height=400&width=300";
+  } catch (error) {
+    console.error('Error generating outfit image:', error);
+    return "/placeholder.svg?height=400&width=300";
+  }
 } 
