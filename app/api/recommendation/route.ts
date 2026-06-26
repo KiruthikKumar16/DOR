@@ -7,7 +7,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Initialize the API client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const MODEL = 'gemini-2.0-flash-exp';
+const MODEL = 'gemini-1.5-flash';
 
 interface UserPreferences {
   gender?: string;
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
 
     const prompt = `You are a fashion expert specializing in global and regional fashion trends, cultural dressing norms, and traditional attire. Given the following information, recommend an outfit in JSON format:
 
-    Weather: ${weather}
+    Weather: ${JSON.stringify(weather)}
     Occasion: ${occasion}
     Style/Vibe: ${outfitVibe}
     Body Type: ${bodyType}
