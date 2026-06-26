@@ -10,8 +10,8 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 // Use Gemini 2.5 Flash model for text generation (latest free stable)
 const TEXT_MODEL = 'gemini-2.5-flash';
-// Use Nano Banana for image generation (latest stable free model)
-const IMAGE_MODEL = 'nano-banana';
+// Use Gemini 2.5 Flash Image (aka Nano Banana) for image generation
+const IMAGE_MODEL = 'gemini-2.5-flash-image';
 
 export async function getOutfitRecommendation({
   weather,
