@@ -116,7 +116,7 @@ export async function generateOutfitImage(outfitRecommendation: any): Promise<st
 
     const response = result.response;
     const imagePart = response.candidates?.[0]?.content?.parts?.find(
-      part => part.inlineData?.mimeType?.startsWith('image/')
+      (part: any) => part.inlineData?.mimeType?.startsWith('image/')
     );
 
     if (imagePart?.inlineData?.data) {

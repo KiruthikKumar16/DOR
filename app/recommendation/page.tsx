@@ -81,11 +81,11 @@ export default function RecommendationPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setFormData((prev: any) => ({ ...prev, [name]: value }))
   }
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setFormData((prev: any) => ({ ...prev, [name]: value }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -330,7 +330,7 @@ export default function RecommendationPage() {
                     Occasion
                   </div>
                 </Label>
-                <Select onValueChange={(value) => handleSelectChange("occasion", value)} value={formData.occasion}>
+                <Select onValueChange={(value: string) => handleSelectChange("occasion", value)} value={formData.occasion}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select occasion" />
                   </SelectTrigger>
@@ -352,7 +352,7 @@ export default function RecommendationPage() {
                     Vibe
                   </div>
                 </Label>
-                <Select onValueChange={(value) => handleSelectChange("vibe", value)} value={formData.vibe}>
+                <Select onValueChange={(value: string) => handleSelectChange("vibe", value)} value={formData.vibe}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select vibe" />
                   </SelectTrigger>
