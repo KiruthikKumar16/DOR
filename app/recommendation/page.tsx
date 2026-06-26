@@ -163,11 +163,10 @@ export default function RecommendationPage() {
       // Use the updated API function and interface
       const result = await getOutfitRecommendation(data)
       
-      // Check if there's a weather error
+      // Check if there's a weather error, but still show the outfit
       if (result.weather?.error) {
         setError(result.weather.error);
-        setLoading(false);
-        return;
+        // Don't return here - continue to show the outfit
       }
 
       // Transform the API response to match the expected frontend format
