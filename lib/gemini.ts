@@ -9,9 +9,9 @@ if (!process.env.GEMINI_API_KEY) {
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 // Use Gemini 2.0 Flash model for text generation
-const TEXT_MODEL = 'gemini-2.0-flash-exp';
+const TEXT_MODEL = 'gemini-2.0-flash';
 // Use Gemini 2.0 Flash Preview for image generation
-const IMAGE_MODEL = 'gemini-2.0-flash-preview-image-generation';
+const IMAGE_MODEL = 'gemini-2.0-flash-exp';
 
 export async function getOutfitRecommendation(
   weather: string,
