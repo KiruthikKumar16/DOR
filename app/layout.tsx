@@ -5,6 +5,7 @@ import "@/app/globals.css"
 import Navbar from "@/components/navbar"
 import { Inter } from "next/font/google"
 import { ClientOnly } from "@/components/client-only"
+import { Analytics } from "@vercel/analytics/next"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Toaster />
         </Providers>
         </ClientOnly>
+        <Analytics />
       </body>
     </html>
   )
