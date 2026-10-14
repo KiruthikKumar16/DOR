@@ -1,17 +1,19 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Check if API key is available
-if (!process.env.GEMINI_API_KEY) {
-  console.error('GEMINI_API_KEY is not set in environment variables');
+// Prefer GEMINI_API_KEY but fall back to older GOOGLE_AI_KEY if present (keeps compatibility with existing Vercel envs)
+const API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY || '';
+
+if (!API_KEY) {
+  console.error('Gemini API key is not set. Set GEMINI_API_KEY (or GOOGLE_AI_KEY) in environment variables.');
 }
 
-// Initialize the API client
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+// Allow overriding the exact model names from environment for easy upgrades without code changes.
+// If you want the latest free "flash" model, set GEMINI_TEXT_MODEL in Vercel to the model name provided by Google.
+const TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || 'gemini-2.5-flash-image';
 
-// Use Gemini 2.5 Flash model for text generation (latest free stable)
-const TEXT_MODEL = 'gemini-2.5-flash';
-// Use Gemini 2.5 Flash Image (aka Nano Banana) for image generation
-const IMAGE_MODEL = 'gemini-2.5-flash-image';
+// Initialize the API client
+const genAI = new GoogleGenerativeAI(API_KEY);
 
 export async function getOutfitRecommendation({
   weather,
@@ -72,9 +74,11 @@ export async function getOutfitRecommendation({
     7. Do not include any extra text or formatting outside the JSON object.
     8. The recommended outfit MUST be appropriate for the specific LOCATION and its cultural context.`;
 
-    console.log('Sending prompt to Gemini:', prompt);
+    console.log('Sending prompt to Gemini (model=', TEXT_MODEL, '):', prompt);
 
-    const result = await model.generateContent(prompt);
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }]
+    });
     const response = await result.response;
     const text = response.text();
 
@@ -125,18 +129,18 @@ export async function generateOutfitImage(outfitRecommendation: any): Promise<st
   try {
     const model = genAI.getGenerativeModel({ model: IMAGE_MODEL });
 
-    const promptForGemini = `Generate a realistic image of a person wearing the following outfit. Focus on the visual details of the clothing items and the overall style. Keep the background simple and neutral.
+    const promptForGemini = `Generate a realistic image of a person wearing the following outfit. Focus on the visual details of the clothing items and the overall style. Keep the background simple and unobtrusive so the clothing details are clear. Provide a single, high-quality image.
 
     Outfit Description:
-    Top: ${outfitRecommendation.outfit.top} (${outfitRecommendation.outfit.topColor})
-    Bottom: ${outfitRecommendation.outfit.bottom} (${outfitRecommendation.outfit.bottomColor})
-    Shoes: ${outfitRecommendation.outfit.shoes} (${outfitRecommendation.outfit.shoesColor})
-    Accessories: ${outfitRecommendation.outfit.accessories.join(", ")} (${outfitRecommendation.outfit.accessoriesColor})
-    ${outfitRecommendation.outfit.outerwear && outfitRecommendation.outfit.outerwear !== "N/A" && outfitRecommendation.outfit.outerwear !== "Not applicable" ? `Outerwear: ${outfitRecommendation.outfit.outerwear} (${outfitRecommendation.outfit.outerwearColor})` : ''}
+    Top: ${outfitRecommendation.outfit?.top || outfitRecommendation.top} (${outfitRecommendation.outfit?.topColor || outfitRecommendation.topColor || ''})
+    Bottom: ${outfitRecommendation.outfit?.bottom || outfitRecommendation.bottom} (${outfitRecommendation.outfit?.bottomColor || outfitRecommendation.bottomColor || ''})
+    Shoes: ${outfitRecommendation.outfit?.shoes || outfitRecommendation.shoes} (${outfitRecommendation.outfit?.shoesColor || outfitRecommendation.shoesColor || ''})
+    Accessories: ${(outfitRecommendation.outfit?.accessories || outfitRecommendation.accessories || []).join(', ')} (${outfitRecommendation.outfit?.accessoriesColor || outfitRecommendation.accessoriesColor || ''})
+    ${outfitRecommendation.outfit?.outerwear || outfitRecommendation.outerwear ? `Outerwear: ${outfitRecommendation.outfit?.outerwear || outfitRecommendation.outerwear} (${outfitRecommendation.outfit?.outerwearColor || outfitRecommendation.outerwearColor || ''})` : ''}
 
-    Style: ${outfitRecommendation.vibe}
-    Occasion: ${outfitRecommendation.occasion}
-    Weather: Temperature ${outfitRecommendation.weather.temperature}°C, ${outfitRecommendation.weather.condition}
+    Style: ${outfitRecommendation.vibe || ''}
+    Occasion: ${outfitRecommendation.occasion || ''}
+    Weather: Temperature ${outfitRecommendation.weather?.temperature || ''}°C, ${outfitRecommendation.weather?.condition || ''}
 
     Please generate a high-quality, realistic image of this outfit. The image should be clear, well-lit, and show the outfit details accurately.`;
 
@@ -161,4 +165,4 @@ export async function generateOutfitImage(outfitRecommendation: any): Promise<st
     console.error('Error generating outfit image:', error);
     return "/placeholder.svg?height=400&width=300";
   }
-} 
+}
