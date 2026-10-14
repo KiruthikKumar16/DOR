@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     const gender = userProfile.profile.gender || preferences?.gender || 'neutral';
     const bodyType = userProfile.profile.bodyType || preferences?.bodyType || 'average';
 
-    // Get outfit recommendation from our centralized function
+    // Route text analysis to Reasoning/Agentic Backbone (gemini-3-flash-preview)
     const outfitRecommendation = await getOutfitRecommendation({
       weather,
       occasion,
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
       location: destination
     });
 
-    // Generate outfit image
+    // Route visual generation to Visual Engine (gemini-3.1-flash-lite-image)
     const imageUrl = await generateOutfitImage({
       outfit: outfitRecommendation,
       vibe: outfitVibe,
@@ -65,12 +65,18 @@ export async function POST(req: Request) {
       }
     });
 
-    // Return the data in the format the frontend expects
+    // Return recommendation data with agentic reasoning thoughts and 1K resolution metadata
     return NextResponse.json({
       outfits: [outfitRecommendation],
       weather: weather,
       culturalNotes: outfitRecommendation.culturalNotes || '',
-      imageUrl: imageUrl || "/placeholder.svg?height=400&width=300",
+      thoughts: outfitRecommendation.thoughts || '',
+      modelInfo: {
+        reasoningModel: 'gemini-3-flash-preview',
+        visualEngine: 'gemini-3.1-flash-lite-image',
+        resolution: '1024x1024 (1K)'
+      },
+      imageUrl: imageUrl || "/placeholder.svg?height=1024&width=1024",
       destination,
       date,
       occasion,
@@ -90,4 +96,4 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
-} 
+}

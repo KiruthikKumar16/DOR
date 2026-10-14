@@ -1,14 +1,7 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { auth } from "@/auth";
 import { prisma } from '@/lib/prisma';
-
-interface SessionUser {
-  id: string;
-  email?: string | null;
-  name?: string | null;
-  image?: string | null;
-}
+import { reasoningModel } from '@/lib/gemini';
 
 interface RecommendationRequest {
   destination: string;
@@ -16,9 +9,6 @@ interface RecommendationRequest {
   occasion: string;
   style: string;
 }
-
-// Initialize Gemini AI with the correct API key
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_KEY || '');
 
 // Helper function to wait
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -191,34 +181,36 @@ Please provide a brief cultural note (maximum 25 words) about local dress custom
 }`;
 
     try {
-      // 6. Get recommendations from Gemini with retry logic
-      const model = genAI.getGenerativeModel({ 
-        model: "gemini-2.0-flash-exp",
-        generationConfig: {
-          temperature: 1.0,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 1024, // Keep token limit reasonable
-        }
-      });
-      
+      // 6. Get recommendations from Gemini 3 Reasoning Backbone with retry logic
       const result = await retryWithBackoff(async () => {
-        const response = await model.generateContent({
+        const response = await reasoningModel.generateContent({
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
         });
         return response;
       });
-      
-    const response = await result.response;
-      const cleanedText = cleanJsonResponse(response.text());
+
+      const response = await result.response;
+      const candidateParts = response.candidates?.[0]?.content?.parts || [];
+      const thoughtParts = candidateParts.filter((part: any) => part.thought === true || part.thought);
+      const thoughts = thoughtParts.length > 0
+        ? thoughtParts.map((p: any) => p.text || '').join('\n').trim()
+        : '';
+
+      const nonThoughtParts = candidateParts.filter((part: any) => !part.thought);
+      const rawText = nonThoughtParts.length > 0
+        ? nonThoughtParts.map((p: any) => p.text || '').join('').trim()
+        : response.text();
+
+      const cleanedText = cleanJsonResponse(rawText);
       const recommendation = JSON.parse(cleanedText);
 
-      // 7. Return complete recommendation with multiple outfits
-    return NextResponse.json({
+      // 7. Return complete recommendation with multiple outfits and thinking trace
+      return NextResponse.json({
         outfits: recommendation.outfits, // Return the array of outfits
         culturalNotes: recommendation.culturalNotes,
-      weather: weatherData
-    });
+        thoughts: thoughts || recommendation.thoughts || undefined,
+        weather: weatherData
+      });
     } catch (geminiError) {
       console.error('Gemini API Error:', geminiError);
       // Consider a fallback here that provides at least one generic outfit
