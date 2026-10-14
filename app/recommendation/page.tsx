@@ -24,10 +24,17 @@ import { getOutfitRecommendation } from '@/lib/api'
 
 interface Outfit {
   top: string;
+  topColor?: string;
   bottom: string;
+  bottomColor?: string;
   shoes: string;
+  shoesColor?: string;
   accessories: string[];
+  accessoriesColor?: string;
   outerwear?: string;
+  outerwearColor?: string;
+  culturalNotes?: string;
+  thoughts?: string;
 }
 
 interface TransformedResult {
@@ -44,6 +51,12 @@ interface TransformedResult {
   currentOutfitIndex: number; // Keep track of the currently displayed outfit
   imageUrl: string;
   culturalNotes: string;
+  thoughts?: string;
+  modelInfo?: {
+    reasoningModel: string;
+    visualEngine: string;
+    resolution: string;
+  };
 }
 
 export default function RecommendationPage() {
@@ -177,13 +190,15 @@ export default function RecommendationPage() {
         vibe: formData.vibe,
         weather: {
           temperature: result.weather.temperature,
-          condition: result.weather.description, // Use the description as the climate condition
-          precipitation: `${result.weather.precipitation}%`
+          condition: (result.weather as any).description || result.weather.condition, // Use the description as the climate condition
+          precipitation: `${(result.weather as any).precipitation ?? 0}%`
         },
         outfits: result.outfits || [],
         currentOutfitIndex: 0,
-        imageUrl: result.imageUrl || "/placeholder.svg",
-        culturalNotes: result.culturalNotes || ""
+        imageUrl: result.imageUrl || "/placeholder.svg?height=1024&width=1024",
+        culturalNotes: result.culturalNotes || "",
+        thoughts: result.thoughts || (result.outfits?.[0] as any)?.thoughts || "",
+        modelInfo: result.modelInfo
       }
 
       // Log the transformed result for debugging
@@ -245,7 +260,7 @@ export default function RecommendationPage() {
   };
 
   // Handle updating a specific outfit in the array after editing
-  const handleOutfitUpdate = (updatedOutfit: Outfit, index: number, newImageUrl?: string, culturalNotes?: string) => {
+  const handleOutfitUpdate = (updatedOutfit: Outfit, index: number, newImageUrl?: string, culturalNotes?: string, thoughts?: string) => {
     if (outfitResults) {
       const newOutfits = [...outfitResults.outfits];
       newOutfits[index] = updatedOutfit;
@@ -264,6 +279,11 @@ export default function RecommendationPage() {
       // Update culturalNotes if provided (only if not empty to avoid overwriting valid notes with empty ones)
       if (culturalNotes !== undefined && culturalNotes !== null) {
          updatedResult.culturalNotes = culturalNotes;
+      }
+
+      // Update thoughts if provided
+      if (thoughts !== undefined && thoughts !== null) {
+        updatedResult.thoughts = thoughts;
       }
 
       setOutfitResults(updatedResult);

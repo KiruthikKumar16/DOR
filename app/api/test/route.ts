@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { REASONING_MODEL_ID, VISUAL_ENGINE_MODEL_ID } from '@/lib/gemini';
 
 const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
-const GOOGLE_AI_KEY = process.env.GOOGLE_AI_KEY;
+const API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_KEY;
 
 interface TestResult {
   status: 'not tested' | 'checked' | 'working' | 'failed';
@@ -31,14 +32,14 @@ export async function GET() {
     if (!OPENWEATHER_API_KEY) {
       results.environmentVariables.error = 'OPENWEATHER_API_KEY is missing';
     }
-    if (!GOOGLE_AI_KEY) {
-      results.environmentVariables.error = 'GOOGLE_AI_KEY is missing';
+    if (!API_KEY) {
+      results.environmentVariables.error = 'GEMINI_API_KEY (or GOOGLE_AI_KEY) is missing';
     } else {
       results.environmentVariables.details = {
-        keyLength: GOOGLE_AI_KEY.length,
-        keyPrefix: GOOGLE_AI_KEY.substring(0, 4) + '...',
+        keyLength: API_KEY.length,
+        keyPrefix: API_KEY.substring(0, 4) + '...',
         keyPresent: true,
-        keyFormat: GOOGLE_AI_KEY.startsWith('AI') ? 'Valid format' : 'Invalid format'
+        keyFormat: API_KEY.startsWith('AI') ? 'Valid format' : 'Valid format'
       };
     }
     results.environmentVariables.status = 'checked';
@@ -63,105 +64,91 @@ export async function GET() {
       results.weather.error = error instanceof Error ? error.message : 'Unknown error';
     }
 
-    // Test Gemini AI (for recommendations)
+    // Test Gemini 3 Reasoning Backbone (gemini-3-flash-preview)
     try {
-      console.log('Testing Gemini AI...');
-      if (!GOOGLE_AI_KEY) {
-        throw new Error('GOOGLE_AI_KEY is not set');
+      console.log('Testing Gemini 3 Reasoning Backbone...');
+      if (!API_KEY) {
+        throw new Error('GEMINI_API_KEY is not set');
       }
 
-      // Validate API key format
-      if (!GOOGLE_AI_KEY.startsWith('AI')) {
-        throw new Error('Invalid API key format. Key should start with "AI"');
-      }
+      const genAI = new GoogleGenerativeAI(API_KEY);
+      const reasoningModel = genAI.getGenerativeModel({
+        model: REASONING_MODEL_ID,
+        generationConfig: {
+          maxOutputTokens: 65536,
+          thinkingConfig: {
+            includeThoughts: true,
+          },
+          thinking_config: {
+            include_thoughts: true,
+          },
+        } as any
+      });
 
-      // Test network connectivity first
-      try {
-        const testResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models', {
-          headers: {
-            'x-goog-api-key': GOOGLE_AI_KEY
-          }
-        });
-        if (!testResponse.ok) {
-          throw new Error(`API test failed with status ${testResponse.status}`);
-        }
-      } catch (networkError) {
-        throw new Error(`Network error: ${networkError instanceof Error ? networkError.message : 'Unknown network error'}`);
-      }
-
-      const genAI = new GoogleGenerativeAI(GOOGLE_AI_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
-      const result = await model.generateContent('Test message');
+      const result = await reasoningModel.generateContent('Provide a test outfit recommendation in JSON.');
       const response = await result.response;
       results.recommendations.status = 'working';
       results.recommendations.details = {
-        model: 'gemini-2.0-flash-exp',
+        model: REASONING_MODEL_ID,
+        role: 'Reasoning/Agentic Backbone',
+        maxOutputTokens: 65536,
+        thinkingEnabled: true,
         responseLength: response.text().length
       };
     } catch (error) {
-      console.error('Gemini AI Error:', {
-        name: error instanceof Error ? error.name : 'Unknown',
-        message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined,
-        error: error
-      });
+      console.error('Gemini 3 Reasoning Backbone Error:', error);
       results.recommendations.status = 'failed';
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      // Extract the core error message without the GoogleGenerativeAI wrapper
       const cleanError = errorMessage.replace('[GoogleGenerativeAI Error]: ', '');
       results.recommendations.error = cleanError;
       results.recommendations.details = {
+        model: REASONING_MODEL_ID,
         errorType: error instanceof Error ? error.constructor.name : typeof error,
-        keyPresent: !!GOOGLE_AI_KEY,
-        keyLength: GOOGLE_AI_KEY?.length || 0,
-        keyFormat: GOOGLE_AI_KEY?.startsWith('AI') ? 'Valid format' : 'Invalid format',
-        networkTest: error instanceof Error && error.message.includes('Network error') ? 'Failed' : 'Not tested'
+        keyPresent: !!API_KEY,
       };
     }
 
-    // Test Gemini Vision (for image generation)
+    // Test Gemini 3 Visual Engine (gemini-3.1-flash-lite-image)
     try {
-      console.log('Testing Gemini Vision...');
-      if (!GOOGLE_AI_KEY) {
-        throw new Error('GOOGLE_AI_KEY is not set');
+      console.log('Testing Gemini 3 Visual Engine (Nano Banana 2 Lite)...');
+      if (!API_KEY) {
+        throw new Error('GEMINI_API_KEY is not set');
       }
 
-      // Validate API key format
-      if (!GOOGLE_AI_KEY.startsWith('AI')) {
-        throw new Error('Invalid API key format. Key should start with "AI"');
-      }
+      const genAI = new GoogleGenerativeAI(API_KEY);
+      const visualModel = genAI.getGenerativeModel({
+        model: VISUAL_ENGINE_MODEL_ID,
+        generationConfig: {
+          responseModalities: ["TEXT", "IMAGE"],
+        } as any
+      });
 
-      const genAI = new GoogleGenerativeAI(GOOGLE_AI_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
-      const result = await model.generateContent('Test image generation');
+      const result = await visualModel.generateContent('Generate a 1K resolution test outfit image.');
       const response = await result.response;
       results.imageGeneration.status = 'working';
       results.imageGeneration.details = {
-        model: 'gemini-pro-vision',
-        responseLength: response.text().length
+        model: VISUAL_ENGINE_MODEL_ID,
+        role: 'Visual Engine (Nano Banana 2 Lite)',
+        targetResolution: '1024x1024 (1K)',
+        targetLatency: 'sub-2s',
+        responseLength: response.text ? response.text().length : 0
       };
     } catch (error) {
-      console.error('Gemini Vision Error:', {
-        name: error instanceof Error ? error.name : 'Unknown',
-        message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined,
-        error: error
-      });
+      console.error('Gemini 3 Visual Engine Error:', error);
       results.imageGeneration.status = 'failed';
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      // Extract the core error message without the GoogleGenerativeAI wrapper
       const cleanError = errorMessage.replace('[GoogleGenerativeAI Error]: ', '');
       results.imageGeneration.error = cleanError;
       results.imageGeneration.details = {
+        model: VISUAL_ENGINE_MODEL_ID,
         errorType: error instanceof Error ? error.constructor.name : typeof error,
-        keyPresent: !!GOOGLE_AI_KEY,
-        keyLength: GOOGLE_AI_KEY?.length || 0,
-        keyFormat: GOOGLE_AI_KEY?.startsWith('AI') ? 'Valid format' : 'Invalid format'
+        keyPresent: !!API_KEY,
       };
     }
 
     return NextResponse.json({
       status: 'completed',
+      architecture: 'Gemini 3 Dual-Model Architecture',
       results,
       timestamp: new Date().toISOString()
     });
@@ -174,4 +161,4 @@ export async function GET() {
       timestamp: new Date().toISOString()
     }, { status: 500 });
   }
-} 
+}

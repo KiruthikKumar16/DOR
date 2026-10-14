@@ -6,7 +6,7 @@ export interface RecommendationRequest {
 }
 
 // Define the structure of a single Outfit
-interface Outfit {
+export interface Outfit {
   top: string;
   topColor?: string;
   bottom: string;
@@ -17,6 +17,8 @@ interface Outfit {
   accessoriesColor?: string;
   outerwear?: string;
   outerwearColor?: string;
+  culturalNotes?: string;
+  thoughts?: string;
 }
 
 export interface OutfitRecommendationResponse {
@@ -26,8 +28,17 @@ export interface OutfitRecommendationResponse {
     condition: string;
     humidity: number;
     windSpeed: number;
+    description?: string;
+    precipitation?: number;
+    error?: string;
   };
   culturalNotes: string;
+  thoughts?: string;
+  modelInfo?: {
+    reasoningModel: string;
+    visualEngine: string;
+    resolution: string;
+  };
   imageUrl: string;
   destination: string;
   date: string;
@@ -35,10 +46,10 @@ export interface OutfitRecommendationResponse {
   vibe: string;
 }
 
-export async function getOutfitRecommendation(data: RecommendationRequest) {
+export async function getOutfitRecommendation(data: RecommendationRequest): Promise<OutfitRecommendationResponse> {
   try {
     console.log('Sending recommendation request:', data);
-    
+
     const response = await fetch('/api/recommendation', {
       method: 'POST',
       headers: {
@@ -63,4 +74,4 @@ export async function getOutfitRecommendation(data: RecommendationRequest) {
     console.error('Error in getOutfitRecommendation:', error);
     throw error;
   }
-} 
+}
